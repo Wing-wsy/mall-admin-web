@@ -9,6 +9,10 @@ export interface ProductVO {
   originPrice?: number;
   detailHtml?: string;
   status: number;
+  categoryId: number;
+  categoryPath?: string;
+  festivalIds?: number[];
+  festivalPaths?: string[];
 }
 
 export interface ProductSavePayload {
@@ -19,10 +23,19 @@ export interface ProductSavePayload {
   originPrice?: number;
   detailHtml?: string;
   status?: number;
+  categoryId: number;
+  festivalIds?: number[];
 }
 
-export function fetchProductList() {
-  return request.get<ApiResult<ProductVO[]>>("/api/admin/product/list");
+export interface ProductQuery {
+  name?: string;
+  categoryId?: number;
+  festivalId?: number;
+  status?: number;
+}
+
+export function fetchProductList(params?: ProductQuery) {
+  return request.get<ApiResult<ProductVO[]>>("/api/admin/product/list", { params });
 }
 
 export function createProduct(data: ProductSavePayload) {

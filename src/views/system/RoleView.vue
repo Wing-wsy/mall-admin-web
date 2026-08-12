@@ -3,6 +3,26 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新建角色</el-button>
       <el-button @click="load">刷新</el-button>
+      <el-input
+        v-model="query.code"
+        clearable
+        placeholder="编码（模糊）"
+        style="width: 160px"
+        @keyup.enter="load"
+      />
+      <el-input
+        v-model="query.name"
+        clearable
+        placeholder="名称（模糊）"
+        style="width: 160px"
+        @keyup.enter="load"
+      />
+      <el-select v-model="query.status" clearable placeholder="状态" style="width: 110px">
+        <el-option label="正常" :value="1" />
+        <el-option label="停用" :value="0" />
+      </el-select>
+      <el-button type="primary" @click="load">查询</el-button>
+      <el-button @click="resetQuery">重置</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="id" label="ID" width="70" />
@@ -72,6 +92,13 @@ const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
 const treeRef = ref<InstanceType<typeof ElTree>>();
+
+const query = reactive({
+  code: "",
+  name: "",
+  status: undefined as number | undefined,
+});
+
 const form = reactive({
   id: 0,
   code: "",
@@ -80,15 +107,45 @@ const form = reactive({
   permissionIds: [] as number[],
 });
 
+async function loadPermTree() {
+  const { data } = await fetchPermissionTree();
+  permTree.value = data.data || [];
+}
+
 async function load() {
   loading.value = true;
   try {
-    const [roles, tree] = await Promise.all([fetchRoleList(), fetchPermissionTree()]);
-    list.value = roles.data.data || [];
-    permTree.value = tree.data.data || [];
+    const { data } = await fetchRoleList({
+      code: query.code.trim() || undefined,
+      name: query.name.trim() || undefined,
+      status: query.status,
+    });
+    list.value = data.data || [];
   } finally {
     loading.value = false;
   }
+}
+
+function resetQuery() {
+  query.code = "";
+  query.name = "";
+  query.status = undefined;
+  load();
+}
+
+function collectLeafCheckedKeys(nodes: PermissionNode[], selected: Set<number>): number[] {
+  const keys: number[] = [];
+  const walk = (items: PermissionNode[]) => {
+    for (const n of items) {
+      if (n.children?.length) {
+        walk(n.children);
+      } else if (selected.has(n.id)) {
+        keys.push(n.id);
+      }
+    }
+  };
+  walk(nodes);
+  return keys;
 }
 
 function openCreate() {
@@ -106,7 +163,10 @@ function openEdit(row: RoleVO) {
     permissionIds: [...(row.permissionIds || [])],
   });
   visible.value = true;
-  nextTick(() => treeRef.value?.setCheckedKeys(form.permissionIds));
+  nextTick(() => {
+    const selected = new Set(form.permissionIds);
+    treeRef.value?.setCheckedKeys(collectLeafCheckedKeys(permTree.value, selected));
+  });
 }
 
 async function save() {
@@ -142,13 +202,18 @@ async function onDelete(row: RoleVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await loadPermTree();
+  await load();
+});
 </script>
 
 <style scoped>
 .toolbar {
   margin-bottom: 12px;
   display: flex;
+  flex-wrap: wrap;
+  align-items: center;
   gap: 8px;
 }
 </style>

@@ -48,8 +48,20 @@ const router = createRouter({
         {
           path: "categories",
           name: "categories",
-          component: () => import("@/views/PlaceholderView.vue"),
-          meta: { title: "分类管理", permission: "category" },
+          component: () => import("@/views/CategoryView.vue"),
+          meta: { title: "商品分类", permission: "category" },
+        },
+        {
+          path: "festivals",
+          name: "festivals",
+          component: () => import("@/views/FestivalView.vue"),
+          meta: { title: "节日分类", permission: "festival" },
+        },
+        {
+          path: "themes",
+          name: "themes",
+          component: () => import("@/views/ThemeView.vue"),
+          meta: { title: "节日皮肤", permission: "theme" },
         },
         {
           path: "system/tenants",

@@ -10,8 +10,15 @@ export interface AdminUserVO {
   roleNames: string[];
 }
 
-export function fetchAdminUserList() {
-  return request.get<ApiResult<AdminUserVO[]>>("/api/admin/system/user/list");
+export interface AdminUserQuery {
+  username?: string;
+  nickname?: string;
+  roleId?: number;
+  status?: number;
+}
+
+export function fetchAdminUserList(params?: AdminUserQuery) {
+  return request.get<ApiResult<AdminUserVO[]>>("/api/admin/system/user/list", { params });
 }
 
 export function createAdminUser(data: {

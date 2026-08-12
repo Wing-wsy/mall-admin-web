@@ -20,8 +20,14 @@ export interface PermissionNode {
   children?: PermissionNode[];
 }
 
-export function fetchRoleList() {
-  return request.get<ApiResult<RoleVO[]>>("/api/admin/system/role/list");
+export interface RoleQuery {
+  code?: string;
+  name?: string;
+  status?: number;
+}
+
+export function fetchRoleList(params?: RoleQuery) {
+  return request.get<ApiResult<RoleVO[]>>("/api/admin/system/role/list", { params });
 }
 
 export function createRole(data: {
