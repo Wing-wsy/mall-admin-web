@@ -1,30 +1,53 @@
 import request, { type ApiResult } from "@/utils/request";
 
+export interface ProductSkuVO {
+  id?: number;
+  specId: number;
+  specName?: string;
+  price: number;
+  originPrice?: number;
+  status: number;
+  sort?: number;
+}
+
 export interface ProductVO {
   id: number;
   name: string;
   subtitle?: string;
   coverUrl?: string;
+  galleryUrls?: string[];
   price: number;
   originPrice?: number;
   detailHtml?: string;
+  detailImageUrls?: string[];
   status: number;
   categoryId: number;
   categoryPath?: string;
   festivalIds?: number[];
   festivalPaths?: string[];
+  specSummary?: string;
+  skus?: ProductSkuVO[];
+}
+
+export interface ProductSkuPayload {
+  specId: number;
+  price: number;
+  originPrice?: number;
+  status?: number;
+  sort?: number;
 }
 
 export interface ProductSavePayload {
   name: string;
   subtitle?: string;
   coverUrl?: string;
-  price: number;
-  originPrice?: number;
+  galleryUrls?: string[];
   detailHtml?: string;
+  detailImageUrls?: string[];
   status?: number;
   categoryId: number;
   festivalIds?: number[];
+  skus: ProductSkuPayload[];
 }
 
 export interface ProductQuery {

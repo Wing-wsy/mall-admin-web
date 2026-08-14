@@ -50,6 +50,13 @@
       </el-table-column>
       <el-table-column prop="name" label="名称" min-width="160" />
       <el-table-column prop="categoryPath" label="商品分类" min-width="140" />
+      <el-table-column label="规格" min-width="120">
+        <template #default="{ row }">
+          <span v-if="row.specSummary">{{ row.specSummary }}</span>
+          <span v-else class="muted">无</span>
+        </template>
+      </el-table-column>
+      <el-table-column prop="price" label="现价" width="100" />
       <el-table-column label="节日分类" min-width="160">
         <template #default="{ row }">
           <span v-if="row.festivalPaths?.length">{{ row.festivalPaths.join("；") }}</span>
@@ -75,7 +82,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="600px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="780px">
       <el-form label-width="96px">
         <el-form-item label="名称" required>
           <el-input v-model="form.name" />
@@ -107,27 +114,99 @@
             style="width: 100%"
           />
         </el-form-item>
-        <el-form-item label="封面">
-          <div class="upload-row">
-            <el-upload :show-file-list="false" :http-request="onUpload" accept="image/*">
-              <el-button>上传图片</el-button>
+        <el-form-item label="头图">
+          <div class="img-list">
+            <div v-for="(url, index) in form.galleryUrls" :key="'g-' + index" class="img-item">
+              <el-image :src="url" style="width: 80px; height: 80px" fit="cover" />
+              <div class="img-actions">
+                <el-button link :disabled="index === 0" @click="moveUrl(form.galleryUrls, index, -1)">前移</el-button>
+                <el-button link type="danger" @click="form.galleryUrls.splice(index, 1)">删除</el-button>
+              </div>
+            </div>
+            <el-upload
+              v-if="form.galleryUrls.length < 9"
+              :show-file-list="false"
+              :http-request="(opt) => onUpload(opt, form.galleryUrls, 9)"
+              accept="image/*"
+            >
+              <el-button>上传</el-button>
             </el-upload>
-            <el-image
-              v-if="form.coverUrl"
-              :src="form.coverUrl"
-              style="width: 80px; height: 80px"
-              fit="cover"
-            />
+          </div>
+          <div class="tip">建议 1:1（1200×1200），最多 9 张；第一张作为列表封面</div>
+        </el-form-item>
+        <el-form-item label="现价">
+          <span v-if="displayPrice != null" class="price-preview">¥{{ displayPrice }}</span>
+          <span v-else class="muted">由启用规格自动计算</span>
+          <span v-if="displayOriginPrice != null" class="origin-preview">原价 ¥{{ displayOriginPrice }}</span>
+        </el-form-item>
+        <el-form-item label="售卖规格" required>
+          <div class="sku-block">
+            <el-table :data="form.skus" border size="small">
+              <el-table-column label="规格" min-width="140">
+                <template #default="{ row, $index }">
+                  <el-select
+                    v-model="row.specId"
+                    filterable
+                    placeholder="选择规格"
+                    style="width: 100%"
+                  >
+                    <el-option
+                      v-for="spec in specOptionsForRow($index)"
+                      :key="spec.id"
+                      :label="spec.name"
+                      :value="spec.id"
+                      :disabled="spec.status !== 1 && spec.id !== row.specId"
+                    />
+                  </el-select>
+                </template>
+              </el-table-column>
+              <el-table-column label="现价" width="150">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.price" :min="0.01" :precision="2" controls-position="right" />
+                </template>
+              </el-table-column>
+              <el-table-column label="原价" width="150">
+                <template #default="{ row }">
+                  <el-input-number v-model="row.originPrice" :min="0" :precision="2" controls-position="right" />
+                </template>
+              </el-table-column>
+              <el-table-column label="启用" width="80">
+                <template #default="{ row }">
+                  <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
+                </template>
+              </el-table-column>
+              <el-table-column label="" width="70">
+                <template #default="{ $index }">
+                  <el-button link type="danger" @click="form.skus.splice($index, 1)">删除</el-button>
+                </template>
+              </el-table-column>
+            </el-table>
+            <el-button class="add-sku" @click="addSkuRow">添加规格</el-button>
+            <div class="tip">至少启用一个规格；展示价取启用规格中的最低价</div>
           </div>
         </el-form-item>
-        <el-form-item label="现价" required>
-          <el-input-number v-model="form.price" :min="0.01" :precision="2" />
-        </el-form-item>
-        <el-form-item label="原价">
-          <el-input-number v-model="form.originPrice" :min="0" :precision="2" />
-        </el-form-item>
-        <el-form-item label="详情">
+        <el-form-item label="详情文案">
           <el-input v-model="form.detailHtml" type="textarea" :rows="3" />
+        </el-form-item>
+        <el-form-item label="详情图">
+          <div class="img-list">
+            <div v-for="(url, index) in form.detailImageUrls" :key="'d-' + index" class="img-item">
+              <el-image :src="url" style="width: 80px; height: 80px" fit="cover" />
+              <div class="img-actions">
+                <el-button link :disabled="index === 0" @click="moveUrl(form.detailImageUrls, index, -1)">前移</el-button>
+                <el-button link type="danger" @click="form.detailImageUrls.splice(index, 1)">删除</el-button>
+              </div>
+            </div>
+            <el-upload
+              v-if="form.detailImageUrls.length < 20"
+              :show-file-list="false"
+              :http-request="(opt) => onUpload(opt, form.detailImageUrls, 20)"
+              accept="image/*"
+            >
+              <el-button>上传</el-button>
+            </el-upload>
+          </div>
+          <div class="tip">详情长图，宽 750～1200，最多 20 张</div>
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
@@ -145,7 +224,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
@@ -162,6 +241,14 @@ import {
   uploadAdminFile,
   type ProductVO,
 } from "@/api/product";
+import { fetchSpecList, type SpecVO } from "@/api/spec";
+
+interface SkuRow {
+  specId?: number;
+  price: number;
+  originPrice?: number;
+  status: number;
+}
 
 interface TreeOption {
   value: number;
@@ -201,6 +288,7 @@ const productTree = ref<TreeOption[]>([]);
 const festivalTree = ref<TreeOption[]>([]);
 const filterProductTree = ref<TreeOption[]>([]);
 const filterFestivalTree = ref<TreeOption[]>([]);
+const specs = ref<SpecVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -217,12 +305,32 @@ const form = reactive({
   name: "",
   subtitle: "",
   coverUrl: "",
-  price: 1,
-  originPrice: undefined as number | undefined,
+  galleryUrls: [] as string[],
   detailHtml: "",
+  detailImageUrls: [] as string[],
   status: 1,
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
+  skus: [] as SkuRow[],
+});
+
+const enabledSkus = computed(() => form.skus.filter((row) => row.status === 1 && row.price > 0));
+
+const displayPrice = computed(() => {
+  if (!enabledSkus.value.length) {
+    return undefined;
+  }
+  return Math.min(...enabledSkus.value.map((row) => Number(row.price)));
+});
+
+const displayOriginPrice = computed(() => {
+  const minRow = enabledSkus.value.reduce<SkuRow | undefined>((best, row) => {
+    if (!best || Number(row.price) < Number(best.price)) {
+      return row;
+    }
+    return best;
+  }, undefined);
+  return minRow?.originPrice != null ? Number(minRow.originPrice) : undefined;
 });
 
 /** 级联选项：回显自动展示「一级 / 二级」；只能选到叶子 */
@@ -264,6 +372,51 @@ async function loadTrees() {
   festivalTree.value = toSelectTree(festivalNodes);
   filterProductTree.value = toFilterTree(productNodes);
   filterFestivalTree.value = toFilterTree(festivalNodes);
+  try {
+    const s = await fetchSpecList();
+    specs.value = s.data.data || [];
+  } catch {
+    specs.value = [];
+  }
+}
+
+function emptySkuRow(specId?: number): SkuRow {
+  return {
+    specId,
+    price: 1,
+    originPrice: undefined,
+    status: 1,
+  };
+}
+
+function unusedEnabledSpecs(exceptIndex = -1) {
+  const used = new Set(
+    form.skus
+      .filter((_, i) => i !== exceptIndex)
+      .map((row) => row.specId)
+      .filter((id): id is number => id != null)
+  );
+  return specs.value.filter((spec) => spec.status === 1 && !used.has(spec.id));
+}
+
+function specOptionsForRow(index: number) {
+  const currentId = form.skus[index]?.specId;
+  const used = new Set(
+    form.skus
+      .filter((_, i) => i !== index)
+      .map((row) => row.specId)
+      .filter((id): id is number => id != null)
+  );
+  return specs.value.filter((spec) => spec.id === currentId || !used.has(spec.id));
+}
+
+function addSkuRow() {
+  const next = unusedEnabledSpecs()[0];
+  if (!next) {
+    ElMessage.warning("没有可添加的启用规格");
+    return;
+  }
+  form.skus.push(emptySkuRow(next.id));
 }
 
 async function load() {
@@ -294,17 +447,20 @@ function resetForm() {
   form.name = "";
   form.subtitle = "";
   form.coverUrl = "";
-  form.price = 1;
-  form.originPrice = undefined;
+  form.galleryUrls = [];
   form.detailHtml = "";
+  form.detailImageUrls = [];
   form.status = 1;
   form.categoryId = undefined;
   form.festivalIds = [];
+  const defaultSpec = specs.value.find((s) => s.status === 1 && s.name === "件")
+    || specs.value.find((s) => s.status === 1);
+  form.skus = [emptySkuRow(defaultSpec?.id)];
 }
 
 async function openCreate() {
-  resetForm();
   await loadTrees();
+  resetForm();
   visible.value = true;
 }
 
@@ -314,18 +470,45 @@ async function openEdit(row: ProductVO) {
   form.name = row.name;
   form.subtitle = row.subtitle || "";
   form.coverUrl = row.coverUrl || "";
-  form.price = Number(row.price);
-  form.originPrice = row.originPrice != null ? Number(row.originPrice) : undefined;
+  form.galleryUrls = row.galleryUrls?.length
+    ? [...row.galleryUrls]
+    : row.coverUrl
+      ? [row.coverUrl]
+      : [];
   form.detailHtml = row.detailHtml || "";
+  form.detailImageUrls = [...(row.detailImageUrls || [])];
   form.status = row.status;
   form.categoryId = row.categoryId;
   form.festivalIds = [...(row.festivalIds || [])];
+  form.skus = (row.skus || []).map((sku) => ({
+    specId: sku.specId,
+    price: Number(sku.price),
+    originPrice: sku.originPrice != null ? Number(sku.originPrice) : undefined,
+    status: sku.status ?? 1,
+  }));
+  if (!form.skus.length) {
+    form.skus = [emptySkuRow()];
+  }
   visible.value = true;
 }
 
-async function onUpload(options: UploadRequestOptions) {
+function moveUrl(list: string[], index: number, delta: number) {
+  const next = index + delta;
+  if (next < 0 || next >= list.length) {
+    return;
+  }
+  const current = list[index];
+  list[index] = list[next];
+  list[next] = current;
+}
+
+async function onUpload(options: UploadRequestOptions, list: string[], max: number) {
+  if (list.length >= max) {
+    ElMessage.warning(`最多上传 ${max} 张`);
+    return;
+  }
   const { data } = await uploadAdminFile(options.file as File, "product");
-  form.coverUrl = data.data.url;
+  list.push(data.data.url);
   ElMessage.success("上传成功");
 }
 
@@ -338,18 +521,43 @@ async function save() {
     ElMessage.warning("请选择商品分类");
     return;
   }
+  const skus = form.skus.filter((row) => row.specId != null);
+  if (!skus.length) {
+    ElMessage.warning("请至少添加一个售卖规格");
+    return;
+  }
+  if (skus.some((row) => !row.price || row.price <= 0)) {
+    ElMessage.warning("每个规格都需要填写大于 0 的现价");
+    return;
+  }
+  const specIds = skus.map((row) => row.specId);
+  if (new Set(specIds).size !== specIds.length) {
+    ElMessage.warning("同一商品不能重复选择同一规格");
+    return;
+  }
+  if (!skus.some((row) => row.status === 1)) {
+    ElMessage.warning("请至少启用一个售卖规格");
+    return;
+  }
   saving.value = true;
   try {
     const payload = {
       name: form.name,
       subtitle: form.subtitle,
-      coverUrl: form.coverUrl,
-      price: form.price,
-      originPrice: form.originPrice,
+      coverUrl: form.galleryUrls[0] || "",
+      galleryUrls: form.galleryUrls,
       detailHtml: form.detailHtml,
+      detailImageUrls: form.detailImageUrls,
       status: form.status,
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
+      skus: skus.map((row, index) => ({
+        specId: row.specId as number,
+        price: row.price,
+        originPrice: row.originPrice,
+        status: row.status,
+        sort: (skus.length - index) * 10,
+      })),
     };
     if (form.id) {
       await updateProduct(form.id, payload);
@@ -389,7 +597,43 @@ onMounted(async () => {
   align-items: center;
   gap: 12px;
 }
+.img-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  align-items: flex-start;
+}
+.img-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+.img-actions {
+  display: flex;
+  gap: 4px;
+}
+.tip {
+  margin-top: 6px;
+  color: #9ca3af;
+  font-size: 12px;
+}
 .muted {
   color: #9ca3af;
+}
+.price-preview {
+  font-weight: 700;
+  color: #111827;
+}
+.origin-preview {
+  margin-left: 12px;
+  color: #9ca3af;
+  text-decoration: line-through;
+  font-size: 13px;
+}
+.sku-block {
+  width: 100%;
+}
+.add-sku {
+  margin-top: 8px;
 }
 </style>
