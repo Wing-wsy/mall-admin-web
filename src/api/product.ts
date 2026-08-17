@@ -8,6 +8,8 @@ export interface ProductSkuVO {
   originPrice?: number;
   status: number;
   sort?: number;
+  isBase?: number;
+  convertQty?: number;
 }
 
 export interface ProductVO {
@@ -18,6 +20,8 @@ export interface ProductVO {
   galleryUrls?: string[];
   price: number;
   originPrice?: number;
+  stock?: number;
+  stockSummary?: string;
   detailHtml?: string;
   detailImageUrls?: string[];
   status: number;
@@ -35,6 +39,8 @@ export interface ProductSkuPayload {
   originPrice?: number;
   status?: number;
   sort?: number;
+  isBase?: number;
+  convertQty?: number;
 }
 
 export interface ProductSavePayload {
@@ -47,6 +53,7 @@ export interface ProductSavePayload {
   status?: number;
   categoryId: number;
   festivalIds?: number[];
+  stock?: number;
   skus: ProductSkuPayload[];
 }
 
@@ -59,6 +66,10 @@ export interface ProductQuery {
 
 export function fetchProductList(params?: ProductQuery) {
   return request.get<ApiResult<ProductVO[]>>("/api/admin/product/list", { params });
+}
+
+export function fetchProductDetail(id: number) {
+  return request.get<ApiResult<ProductVO>>(`/api/admin/product/${id}`);
 }
 
 export function createProduct(data: ProductSavePayload) {

@@ -40,6 +40,24 @@ const router = createRouter({
           meta: { title: "商品管理", permission: "product" },
         },
         {
+          path: "orders",
+          name: "orders",
+          component: () => import("@/views/OrderView.vue"),
+          meta: { title: "订单管理", permission: "order" },
+        },
+        {
+          path: "members",
+          name: "members",
+          component: () => import("@/views/MemberView.vue"),
+          meta: { title: "用户管理", permission: "member" },
+        },
+        {
+          path: "coupons",
+          name: "coupons",
+          component: () => import("@/views/CouponView.vue"),
+          meta: { title: "优惠券", permission: "coupon" },
+        },
+        {
           path: "specs",
           name: "specs",
           component: () => import("@/views/SpecView.vue"),

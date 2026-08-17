@@ -56,7 +56,11 @@
           <span v-else class="muted">无</span>
         </template>
       </el-table-column>
-      <el-table-column prop="price" label="现价" width="100" />
+      <el-table-column label="库存" width="110">
+        <template #default="{ row }">
+          {{ row.stockSummary || row.stock || 0 }}
+        </template>
+      </el-table-column>
       <el-table-column label="节日分类" min-width="160">
         <template #default="{ row }">
           <span v-if="row.festivalPaths?.length">{{ row.festivalPaths.join("；") }}</span>
@@ -72,8 +76,9 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
+          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
           <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button link @click="toggleStatus(row)">
             {{ row.status === 1 ? "下架" : "上架" }}
@@ -82,7 +87,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="780px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="920px">
       <el-form label-width="96px">
         <el-form-item label="名称" required>
           <el-input v-model="form.name" />
@@ -126,7 +131,7 @@
             <el-upload
               v-if="form.galleryUrls.length < 9"
               :show-file-list="false"
-              :http-request="(opt) => onUpload(opt, form.galleryUrls, 9)"
+              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.galleryUrls, 9)"
               accept="image/*"
             >
               <el-button>上传</el-button>
@@ -139,10 +144,14 @@
           <span v-else class="muted">由启用规格自动计算</span>
           <span v-if="displayOriginPrice != null" class="origin-preview">原价 ¥{{ displayOriginPrice }}</span>
         </el-form-item>
+        <el-form-item label="库存" required>
+          <el-input-number v-model="form.stock" :min="0" :precision="0" />
+          <span class="tip">按库存单位「{{ baseSpecName || "—" }}」计</span>
+        </el-form-item>
         <el-form-item label="售卖规格" required>
           <div class="sku-block">
             <el-table :data="form.skus" border size="small">
-              <el-table-column label="规格" min-width="140">
+              <el-table-column label="规格" min-width="120">
                 <template #default="{ row, $index }">
                   <el-select
                     v-model="row.specId"
@@ -160,29 +169,49 @@
                   </el-select>
                 </template>
               </el-table-column>
-              <el-table-column label="现价" width="150">
+              <el-table-column label="现价" width="130">
                 <template #default="{ row }">
                   <el-input-number v-model="row.price" :min="0.01" :precision="2" controls-position="right" />
                 </template>
               </el-table-column>
-              <el-table-column label="原价" width="150">
+              <el-table-column label="原价" width="130">
                 <template #default="{ row }">
                   <el-input-number v-model="row.originPrice" :min="0" :precision="2" controls-position="right" />
                 </template>
               </el-table-column>
-              <el-table-column label="启用" width="80">
+              <el-table-column label="库存单位" width="90">
+                <template #default="{ $index }">
+                  <el-radio :model-value="form.skus[$index].isBase" :value="1" @change="setBase($index)">
+                    是
+                  </el-radio>
+                </template>
+              </el-table-column>
+              <el-table-column label="换算" width="150">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.convertQty"
+                    :min="row.isBase === 1 ? 1 : 2"
+                    :precision="0"
+                    :disabled="row.isBase === 1"
+                    controls-position="right"
+                  />
+                </template>
+              </el-table-column>
+              <el-table-column label="启用" width="70">
                 <template #default="{ row }">
                   <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
                 </template>
               </el-table-column>
-              <el-table-column label="" width="70">
+              <el-table-column label="" width="64">
                 <template #default="{ $index }">
-                  <el-button link type="danger" @click="form.skus.splice($index, 1)">删除</el-button>
+                  <el-button link type="danger" @click="removeSkuRow($index)">删除</el-button>
                 </template>
               </el-table-column>
             </el-table>
             <el-button class="add-sku" @click="addSkuRow">添加规格</el-button>
-            <div class="tip">至少启用一个规格；展示价取启用规格中的最低价</div>
+            <div class="tip">
+              必须指定一个库存单位（换算=1）。其它规格填写「1 {{ nonBaseHint }} = N {{ baseSpecName || "库存单位" }}」
+            </div>
           </div>
         </el-form-item>
         <el-form-item label="详情文案">
@@ -200,7 +229,7 @@
             <el-upload
               v-if="form.detailImageUrls.length < 20"
               :show-file-list="false"
-              :http-request="(opt) => onUpload(opt, form.detailImageUrls, 20)"
+              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.detailImageUrls, 20)"
               accept="image/*"
             >
               <el-button>上传</el-button>
@@ -220,12 +249,15 @@
         <el-button type="primary" :loading="saving" @click="save">保存</el-button>
       </template>
     </el-dialog>
+
+    <ProductDetailDialog v-model="detailVisible" :product-id="detailId" />
   </div>
 </template>
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
+import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import type { UploadRequestOptions } from "element-plus";
 import {
   CATEGORY_TYPE_FESTIVAL,
@@ -248,6 +280,8 @@ interface SkuRow {
   price: number;
   originPrice?: number;
   status: number;
+  isBase: number;
+  convertQty: number;
 }
 
 interface TreeOption {
@@ -291,6 +325,8 @@ const filterFestivalTree = ref<TreeOption[]>([]);
 const specs = ref<SpecVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
+const detailVisible = ref(false);
+const detailId = ref<number>();
 const saving = ref(false);
 
 const query = reactive({
@@ -311,10 +347,23 @@ const form = reactive({
   status: 1,
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
+  stock: 0,
   skus: [] as SkuRow[],
 });
 
 const enabledSkus = computed(() => form.skus.filter((row) => row.status === 1 && row.price > 0));
+
+const baseSku = computed(() => form.skus.find((row) => row.status === 1 && row.isBase === 1));
+
+const baseSpecName = computed(() => {
+  const specId = baseSku.value?.specId;
+  return specs.value.find((s) => s.id === specId)?.name || "";
+});
+
+const nonBaseHint = computed(() => {
+  const row = form.skus.find((s) => s.status === 1 && s.isBase !== 1);
+  return specs.value.find((s) => s.id === row?.specId)?.name || "箱";
+});
 
 const displayPrice = computed(() => {
   if (!enabledSkus.value.length) {
@@ -380,13 +429,38 @@ async function loadTrees() {
   }
 }
 
-function emptySkuRow(specId?: number): SkuRow {
+function emptySkuRow(specId?: number, isBase = 0): SkuRow {
   return {
     specId,
     price: 1,
     originPrice: undefined,
     status: 1,
+    isBase,
+    convertQty: isBase === 1 ? 1 : 12,
   };
+}
+
+function setBase(index: number) {
+  form.skus.forEach((row, i) => {
+    if (i === index) {
+      row.isBase = 1;
+      row.convertQty = 1;
+    } else {
+      row.isBase = 0;
+      if (!row.convertQty || row.convertQty < 2) {
+        row.convertQty = 12;
+      }
+    }
+  });
+}
+
+function removeSkuRow(index: number) {
+  const wasBase = form.skus[index]?.isBase === 1;
+  form.skus.splice(index, 1);
+  if (wasBase && form.skus.length) {
+    const firstEnabled = form.skus.findIndex((row) => row.status === 1);
+    setBase(firstEnabled >= 0 ? firstEnabled : 0);
+  }
 }
 
 function unusedEnabledSpecs(exceptIndex = -1) {
@@ -416,7 +490,7 @@ function addSkuRow() {
     ElMessage.warning("没有可添加的启用规格");
     return;
   }
-  form.skus.push(emptySkuRow(next.id));
+  form.skus.push(emptySkuRow(next.id, 0));
 }
 
 async function load() {
@@ -453,9 +527,15 @@ function resetForm() {
   form.status = 1;
   form.categoryId = undefined;
   form.festivalIds = [];
+  form.stock = 0;
   const defaultSpec = specs.value.find((s) => s.status === 1 && s.name === "件")
     || specs.value.find((s) => s.status === 1);
-  form.skus = [emptySkuRow(defaultSpec?.id)];
+  form.skus = [emptySkuRow(defaultSpec?.id, 1)];
+}
+
+function openDetail(row: ProductVO) {
+  detailId.value = row.id;
+  detailVisible.value = true;
 }
 
 async function openCreate() {
@@ -480,14 +560,20 @@ async function openEdit(row: ProductVO) {
   form.status = row.status;
   form.categoryId = row.categoryId;
   form.festivalIds = [...(row.festivalIds || [])];
+  form.stock = row.stock ?? 0;
   form.skus = (row.skus || []).map((sku) => ({
     specId: sku.specId,
     price: Number(sku.price),
     originPrice: sku.originPrice != null ? Number(sku.originPrice) : undefined,
     status: sku.status ?? 1,
+    isBase: sku.isBase === 1 ? 1 : 0,
+    convertQty: sku.convertQty && sku.convertQty > 0 ? sku.convertQty : sku.isBase === 1 ? 1 : 12,
   }));
   if (!form.skus.length) {
-    form.skus = [emptySkuRow()];
+    form.skus = [emptySkuRow(undefined, 1)];
+  } else if (!form.skus.some((s) => s.status === 1 && s.isBase === 1)) {
+    const firstEnabled = form.skus.findIndex((s) => s.status === 1);
+    setBase(firstEnabled >= 0 ? firstEnabled : 0);
   }
   visible.value = true;
 }
@@ -539,6 +625,19 @@ async function save() {
     ElMessage.warning("请至少启用一个售卖规格");
     return;
   }
+  const enabled = skus.filter((row) => row.status === 1);
+  if (enabled.filter((row) => row.isBase === 1).length !== 1) {
+    ElMessage.warning("启用规格中必须指定且仅指定一个库存单位");
+    return;
+  }
+  if (enabled.some((row) => row.isBase !== 1 && (!row.convertQty || row.convertQty < 2))) {
+    ElMessage.warning("非库存单位换算必须为大于等于 2 的整数");
+    return;
+  }
+  if (form.stock == null || form.stock < 0) {
+    ElMessage.warning("库存不能为负数");
+    return;
+  }
   saving.value = true;
   try {
     const payload = {
@@ -551,12 +650,15 @@ async function save() {
       status: form.status,
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
+      stock: form.stock,
       skus: skus.map((row, index) => ({
         specId: row.specId as number,
         price: row.price,
         originPrice: row.originPrice,
         status: row.status,
         sort: (skus.length - index) * 10,
+        isBase: row.isBase === 1 ? 1 : 0,
+        convertQty: row.isBase === 1 ? 1 : row.convertQty,
       })),
     };
     if (form.id) {
