@@ -9,6 +9,11 @@
         <el-option :value="40" label="已完成" />
         <el-option :value="50" label="已取消" />
       </el-select>
+      <el-select v-model="orderType" placeholder="订单类型" style="width: 160px">
+        <el-option value="" label="全部" />
+        <el-option value="1" label="积分兑换订单" />
+        <el-option value="0" label="支付金额订单" />
+      </el-select>
       <el-button type="primary" @click="load">查询</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -16,10 +21,15 @@
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
-      <el-table-column prop="payAmount" label="应付" width="100" />
+      <el-table-column prop="payAmount" label="应付" width="120">
+        <template #default="{ row }">
+          <span v-if="row.orderType === 1">{{ row.pointsAmount || 0 }} 积分</span>
+          <span v-else>¥{{ row.payAmount }}</span>
+        </template>
+      </el-table-column>
       <el-table-column label="支付" width="110">
         <template #default="{ row }">
-          {{ row.payChannel || "-" }}
+          {{ row.orderType === 1 ? "积分兑换" : row.payChannel || "-" }}
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
@@ -48,14 +58,20 @@
           <el-descriptions-item label="状态">
             <el-tag :type="statusType(detail.status)" :class="'st-' + detail.status">{{ detail.statusText }}</el-tag>
           </el-descriptions-item>
-          <el-descriptions-item label="应付">¥{{ detail.payAmount }}</el-descriptions-item>
-          <el-descriptions-item label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
-          <el-descriptions-item label="支付渠道">{{ detail.payChannel || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="应付">
+            <span v-if="detail.orderType === 1">{{ detail.pointsAmount || 0 }} 积分</span>
+            <span v-else>¥{{ detail.payAmount }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
+          <el-descriptions-item label="支付渠道">
+            {{ detail.orderType === 1 ? "积分兑换" : detail.payChannel || "-" }}
+          </el-descriptions-item>
           <el-descriptions-item label="收货人">{{ detail.receiverName }} {{ detail.receiverPhone }}</el-descriptions-item>
           <el-descriptions-item label="地址" :span="2">{{ detail.receiverAddress }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.expressNo" label="物流">
-            {{ detail.expressCompanyName || detail.expressCompany }} {{ detail.expressNo }}
+            <span>{{ detail.expressCompanyName || detail.expressCompany }} {{ detail.expressNo }}</span>
+            <el-button link type="primary" style="margin-left: 8px" @click="openExpress">查询物流</el-button>
           </el-descriptions-item>
           <el-descriptions-item v-if="detail.expressNo" label="发货时间">{{ detail.shipTime || "-" }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.buyerRemark" label="备注" :span="2">{{ detail.buyerRemark }}</el-descriptions-item>
@@ -81,6 +97,31 @@
           <el-table-column prop="amount" label="小计" width="90" />
         </el-table>
       </template>
+    </el-dialog>
+
+    <el-dialog v-model="expressVisible" title="物流信息" width="520px" @closed="resetExpress">
+      <div v-loading="expressLoading">
+        <template v-if="expressDetail">
+          <el-descriptions :column="1" border>
+            <el-descriptions-item label="物流状态">{{ expressDetail.expressStateText || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="承运商">{{ expressDetail.expressCompanyName || "-" }}</el-descriptions-item>
+            <el-descriptions-item label="运单号">{{ expressDetail.expressNo || "-" }}</el-descriptions-item>
+          </el-descriptions>
+          <el-timeline v-if="expressDetail.traces?.length" style="margin-top: 20px; padding-left: 4px">
+            <el-timeline-item
+              v-for="(item, idx) in expressDetail.traces"
+              :key="idx"
+              :type="idx === 0 ? 'primary' : undefined"
+              :timestamp="formatTraceTime(item.time)"
+              placement="top"
+            >
+              <div>{{ item.context }}</div>
+              <div v-if="item.location" class="trace-loc">{{ item.location }}</div>
+            </el-timeline-item>
+          </el-timeline>
+          <el-empty v-else description="暂无物流轨迹" :image-size="72" />
+        </template>
+      </div>
     </el-dialog>
 
     <ProductDetailDialog v-model="productVisible" :product-id="productId" />
@@ -112,8 +153,10 @@ import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import {
   cancelAdminOrder,
   fetchAdminOrderDetail,
+  fetchAdminOrderExpress,
   fetchAdminOrderList,
   shipAdminOrder,
+  type AdminExpressVO,
   type AdminOrderVO,
 } from "@/api/order";
 
@@ -121,10 +164,14 @@ const list = ref<AdminOrderVO[]>([]);
 const loading = ref(false);
 const orderNo = ref("");
 const status = ref<number | undefined>();
+const orderType = ref("");
 const visible = ref(false);
 const detail = ref<AdminOrderVO | null>(null);
 const productVisible = ref(false);
 const productId = ref<number>();
+const expressVisible = ref(false);
+const expressLoading = ref(false);
+const expressDetail = ref<AdminExpressVO | null>(null);
 const shipVisible = ref(false);
 const shipping = ref(false);
 const shipRow = ref<AdminOrderVO | null>(null);
@@ -151,6 +198,7 @@ async function load() {
   try {
     const { data } = await fetchAdminOrderList({
       status: status.value,
+      orderType: orderType.value === "" ? undefined : Number(orderType.value),
       orderNo: orderNo.value || undefined,
     });
     list.value = data.data || [];
@@ -168,6 +216,34 @@ async function openDetail(row: AdminOrderVO) {
 function openProduct(id: number) {
   productId.value = id;
   productVisible.value = true;
+}
+
+async function openExpress() {
+  if (!detail.value?.id) {
+    return;
+  }
+  expressVisible.value = true;
+  expressLoading.value = true;
+  expressDetail.value = null;
+  try {
+    const { data } = await fetchAdminOrderExpress(detail.value.id);
+    expressDetail.value = data.data;
+  } catch {
+    expressVisible.value = false;
+  } finally {
+    expressLoading.value = false;
+  }
+}
+
+function resetExpress() {
+  expressDetail.value = null;
+}
+
+function formatTraceTime(t?: string) {
+  if (!t) {
+    return "";
+  }
+  return String(t).replace("T", " ").slice(0, 19);
 }
 
 async function onShip(row: AdminOrderVO) {
@@ -247,5 +323,10 @@ onMounted(load);
   --el-tag-bg-color: #f3f4f6;
   --el-tag-border-color: #9ca3af;
   --el-tag-text-color: #6b7280;
+}
+.trace-loc {
+  margin-top: 4px;
+  color: #9ca3af;
+  font-size: 12px;
 }
 </style>

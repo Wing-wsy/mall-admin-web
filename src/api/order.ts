@@ -18,10 +18,12 @@ export interface AdminOrderVO {
   orderNo: string;
   status: number;
   statusText: string;
+  orderType?: number;
   goodsAmount: number;
   freightAmount: number;
   couponAmount?: number;
   couponName?: string;
+  pointsAmount?: number;
   payAmount: number;
   payChannel?: string;
   payStatus?: number;
@@ -43,7 +45,7 @@ export interface AdminOrderVO {
   items?: AdminOrderItemVO[];
 }
 
-export function fetchAdminOrderList(params?: { status?: number; orderNo?: string }) {
+export function fetchAdminOrderList(params?: { status?: number; orderType?: number; orderNo?: string }) {
   return request.get<ApiResult<AdminOrderVO[]>>("/api/admin/order/list", { params });
 }
 
@@ -57,4 +59,23 @@ export function shipAdminOrder(id: number, data: { expressCompany: string; expre
 
 export function cancelAdminOrder(id: number, reason?: string) {
   return request.post<ApiResult<AdminOrderVO>>(`/api/admin/order/${id}/cancel`, { reason });
+}
+
+export interface AdminExpressTraceVO {
+  time?: string;
+  context?: string;
+  location?: string;
+}
+
+export interface AdminExpressVO {
+  expressCompany?: string;
+  expressCompanyName?: string;
+  expressNo?: string;
+  expressState?: number;
+  expressStateText?: string;
+  traces?: AdminExpressTraceVO[];
+}
+
+export function fetchAdminOrderExpress(id: number) {
+  return request.get<ApiResult<AdminExpressVO>>(`/api/admin/order/${id}/express`);
 }

@@ -58,6 +58,12 @@ const router = createRouter({
           meta: { title: "优惠券", permission: "coupon" },
         },
         {
+          path: "point-products",
+          name: "point-products",
+          component: () => import("@/views/PointProductView.vue"),
+          meta: { title: "积分兑换", permission: "point" },
+        },
+        {
           path: "specs",
           name: "specs",
           component: () => import("@/views/SpecView.vue"),
@@ -98,6 +104,12 @@ const router = createRouter({
           name: "themes",
           component: () => import("@/views/ThemeView.vue"),
           meta: { title: "节日皮肤", permission: "theme" },
+        },
+        {
+          path: "shop",
+          name: "shop",
+          component: () => import("@/views/ShopView.vue"),
+          meta: { title: "客服配置", permission: "shop" },
         },
         {
           path: "system/tenants",
