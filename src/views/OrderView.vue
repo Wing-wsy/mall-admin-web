@@ -11,8 +11,9 @@
       </el-select>
       <el-select v-model="orderType" placeholder="订单类型" style="width: 160px">
         <el-option value="" label="全部" />
-        <el-option value="1" label="积分兑换订单" />
         <el-option value="0" label="支付金额订单" />
+        <el-option value="1" label="积分兑换订单" />
+        <el-option value="2" label="兑换券订单" />
       </el-select>
       <el-button type="primary" @click="load">查询</el-button>
     </div>
@@ -21,15 +22,26 @@
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
+      <el-table-column label="商品" min-width="220">
+        <template #default="{ row }">
+          <div v-if="row.items?.length" class="goods">
+            <div v-for="item in row.items" :key="item.id" class="goods-line">
+              {{ item.productName }}{{ item.specName ? " " + item.specName : "" }} x{{ item.quantity }}
+            </div>
+          </div>
+          <span v-else>-</span>
+        </template>
+      </el-table-column>
       <el-table-column prop="payAmount" label="应付" width="120">
         <template #default="{ row }">
           <span v-if="row.orderType === 1">{{ row.pointsAmount || 0 }} 积分</span>
+          <span v-else-if="row.orderType === 2">兑换券</span>
           <span v-else>¥{{ row.payAmount }}</span>
         </template>
       </el-table-column>
       <el-table-column label="支付" width="110">
         <template #default="{ row }">
-          {{ row.orderType === 1 ? "积分兑换" : row.payChannel || "-" }}
+          {{ row.orderType === 1 ? "积分兑换" : row.orderType === 2 ? "兑换券" : row.payChannel || "-" }}
         </template>
       </el-table-column>
       <el-table-column label="状态" width="100">
@@ -60,12 +72,14 @@
           </el-descriptions-item>
           <el-descriptions-item label="应付">
             <span v-if="detail.orderType === 1">{{ detail.pointsAmount || 0 }} 积分</span>
+            <span v-else-if="detail.orderType === 2">兑换券 / ¥0</span>
             <span v-else>¥{{ detail.payAmount }}</span>
           </el-descriptions-item>
-          <el-descriptions-item v-if="detail.orderType !== 1" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
-          <el-descriptions-item v-if="detail.orderType !== 1 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType === 2" label="验证码">{{ detail.voucherCodeMask || "-" }}</el-descriptions-item>
           <el-descriptions-item label="支付渠道">
-            {{ detail.orderType === 1 ? "积分兑换" : detail.payChannel || "-" }}
+            {{ detail.orderType === 1 ? "积分兑换" : detail.orderType === 2 ? "兑换券" : detail.payChannel || "-" }}
           </el-descriptions-item>
           <el-descriptions-item label="收货人">{{ detail.receiverName }} {{ detail.receiverPhone }}</el-descriptions-item>
           <el-descriptions-item label="地址" :span="2">{{ detail.receiverAddress }}</el-descriptions-item>
@@ -284,7 +298,12 @@ async function submitShip() {
 }
 
 async function onCancel(row: AdminOrderVO) {
-  await ElMessageBox.confirm(`取消订单 ${row.orderNo} 将回补库存，确认吗？`, "取消订单");
+  await ElMessageBox.confirm(
+    row.orderType === 2
+      ? `取消订单 ${row.orderNo} 将回补库存，并把验证码打回未使用，确认吗？`
+      : `取消订单 ${row.orderNo} 将回补库存，确认吗？`,
+    "取消订单"
+  );
   await cancelAdminOrder(row.id, "后台取消");
   ElMessage.success("已取消");
   await load();
@@ -298,6 +317,12 @@ onMounted(load);
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+.goods {
+  line-height: 1.4;
+}
+.goods-line + .goods-line {
+  margin-top: 4px;
 }
 .st-10 {
   --el-tag-bg-color: #fef3c7;

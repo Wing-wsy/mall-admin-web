@@ -64,6 +64,12 @@ const router = createRouter({
           meta: { title: "积分兑换", permission: "point" },
         },
         {
+          path: "vouchers",
+          name: "vouchers",
+          component: () => import("@/views/VoucherView.vue"),
+          meta: { title: "兑换券", permission: "voucher" },
+        },
+        {
           path: "specs",
           name: "specs",
           component: () => import("@/views/SpecView.vue"),

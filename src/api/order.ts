@@ -24,6 +24,8 @@ export interface AdminOrderVO {
   couponAmount?: number;
   couponName?: string;
   pointsAmount?: number;
+  voucherCodeId?: number;
+  voucherCodeMask?: string;
   payAmount: number;
   payChannel?: string;
   payStatus?: number;
