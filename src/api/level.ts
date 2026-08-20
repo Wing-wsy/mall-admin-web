@@ -1,0 +1,73 @@
+import request, { type ApiResult } from "@/utils/request";
+
+export interface AdminMemberLevelVO {
+  id: number;
+  name: string;
+  iconUrl?: string;
+  discount: number | string;
+  couponStackMode: "STACK" | "MUTEX";
+  couponStackModeText?: string;
+  sort?: number;
+  status: number;
+  phoneCount?: number;
+  createTime?: string;
+  updateTime?: string;
+}
+
+export interface MemberLevelSavePayload {
+  name: string;
+  iconUrl?: string | null;
+  discount: number;
+  couponStackMode: "STACK" | "MUTEX";
+  sort?: number;
+  status?: number;
+}
+
+export interface AdminMemberLevelPhoneVO {
+  id: number;
+  phone: string;
+  levelId: number;
+  levelName?: string;
+  memberNo?: string;
+  createTime?: string;
+}
+
+export function fetchMemberLevels() {
+  return request.get<ApiResult<AdminMemberLevelVO[]>>("/api/admin/member-level/list");
+}
+
+export function createMemberLevel(data: MemberLevelSavePayload) {
+  return request.post<ApiResult<AdminMemberLevelVO>>("/api/admin/member-level", data);
+}
+
+export function updateMemberLevel(id: number, data: MemberLevelSavePayload) {
+  return request.put<ApiResult<AdminMemberLevelVO>>(`/api/admin/member-level/${id}`, data);
+}
+
+export function updateMemberLevelStatus(id: number, status: number) {
+  return request.put<ApiResult<null>>(`/api/admin/member-level/${id}/status`, { status });
+}
+
+export function deleteMemberLevel(id: number) {
+  return request.delete<ApiResult<null>>(`/api/admin/member-level/${id}`);
+}
+
+export function fetchMemberLevelPhones(params?: { phone?: string; levelId?: number }) {
+  return request.get<ApiResult<AdminMemberLevelPhoneVO[]>>("/api/admin/member-level/phone/list", { params });
+}
+
+export function createMemberLevelPhone(data: { phone: string; levelId: number }) {
+  return request.post<ApiResult<AdminMemberLevelPhoneVO>>("/api/admin/member-level/phone", data);
+}
+
+export function batchCreateMemberLevelPhones(data: { phones: string; levelId: number }) {
+  return request.post<ApiResult<number>>("/api/admin/member-level/phone/batch", data);
+}
+
+export function updateMemberLevelPhone(id: number, data: { phone: string; levelId: number }) {
+  return request.put<ApiResult<AdminMemberLevelPhoneVO>>(`/api/admin/member-level/phone/${id}`, data);
+}
+
+export function deleteMemberLevelPhone(id: number) {
+  return request.delete<ApiResult<null>>(`/api/admin/member-level/phone/${id}`);
+}

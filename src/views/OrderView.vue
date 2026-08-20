@@ -70,6 +70,12 @@
           <el-descriptions-item label="状态">
             <el-tag :type="statusType(detail.status)" :class="'st-' + detail.status">{{ detail.statusText }}</el-tag>
           </el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="商品金额">
+            ¥{{ detail.goodsAmount }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="运费">
+            {{ Number(detail.freightAmount) > 0 ? `¥${detail.freightAmount}` : "免运费" }}
+          </el-descriptions-item>
           <el-descriptions-item label="应付">
             <span v-if="detail.orderType === 1">{{ detail.pointsAmount || 0 }} 积分</span>
             <span v-else-if="detail.orderType === 2">兑换券 / ¥0</span>
@@ -77,6 +83,8 @@
           </el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.memberLevelName" label="会员等级">{{ detail.memberLevelName }}{{ detail.memberDiscount ? `（${detail.memberDiscount}折）` : "" }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.memberDiscountAmount" label="会员减免">-¥{{ detail.memberDiscountAmount }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType === 2" label="验证码">{{ detail.voucherCodeMask || "-" }}</el-descriptions-item>
           <el-descriptions-item label="支付渠道">
             {{ detail.orderType === 1 ? "积分兑换" : detail.orderType === 2 ? "兑换券" : detail.payChannel || "-" }}

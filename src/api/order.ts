@@ -23,6 +23,9 @@ export interface AdminOrderVO {
   freightAmount: number;
   couponAmount?: number;
   couponName?: string;
+  memberLevelName?: string;
+  memberDiscount?: number;
+  memberDiscountAmount?: number;
   pointsAmount?: number;
   voucherCodeId?: number;
   voucherCodeMask?: string;

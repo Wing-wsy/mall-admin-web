@@ -5,7 +5,7 @@
       <p class="hint">多商户入驻 · 试用 admin / merchant / ops（密码均为 admin123）</p>
       <el-form @submit.prevent>
         <el-form-item label="账号">
-          <el-input v-model="username" placeholder="admin" />
+          <el-input v-model="username" placeholder="merchant" />
         </el-form-item>
         <el-form-item label="密码">
           <el-input v-model="password" type="password" show-password placeholder="admin123" />
@@ -25,7 +25,7 @@ import { useUserStore } from "@/stores/user";
 
 const router = useRouter();
 const userStore = useUserStore();
-const username = ref("admin");
+const username = ref("merchant");
 const password = ref("admin123");
 const loading = ref(false);
 

@@ -87,7 +87,7 @@
       </el-table-column>
     </el-table>
 
-    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="920px">
+    <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="1080px">
       <el-form label-width="96px">
         <el-form-item label="名称" required>
           <el-input v-model="form.name" />
@@ -197,6 +197,16 @@
                   />
                 </template>
               </el-table-column>
+              <el-table-column label="计费件数" width="150">
+                <template #default="{ row }">
+                  <el-input-number
+                    v-model="row.freightQty"
+                    :min="1"
+                    :precision="0"
+                    controls-position="right"
+                  />
+                </template>
+              </el-table-column>
               <el-table-column label="启用" width="70">
                 <template #default="{ row }">
                   <el-switch v-model="row.status" :active-value="1" :inactive-value="0" />
@@ -210,7 +220,8 @@
             </el-table>
             <el-button class="add-sku" @click="addSkuRow">添加规格</el-button>
             <div class="tip">
-              必须指定一个库存单位（换算=1）。其它规格填写「1 {{ nonBaseHint }} = N {{ baseSpecName || "库存单位" }}」
+              必须指定一个库存单位（换算=1）。其它规格填写「1 {{ nonBaseHint }} = N {{ baseSpecName || "库存单位" }}」。
+              计费件数：买 1 个按几件收运费，默认 1；大件填 3～5，与库存换算无关。
             </div>
           </div>
         </el-form-item>
@@ -282,6 +293,7 @@ interface SkuRow {
   status: number;
   isBase: number;
   convertQty: number;
+  freightQty: number;
 }
 
 interface TreeOption {
@@ -437,6 +449,7 @@ function emptySkuRow(specId?: number, isBase = 0): SkuRow {
     status: 1,
     isBase,
     convertQty: isBase === 1 ? 1 : 12,
+    freightQty: 1,
   };
 }
 
@@ -568,6 +581,7 @@ async function openEdit(row: ProductVO) {
     status: sku.status ?? 1,
     isBase: sku.isBase === 1 ? 1 : 0,
     convertQty: sku.convertQty && sku.convertQty > 0 ? sku.convertQty : sku.isBase === 1 ? 1 : 12,
+    freightQty: sku.freightQty && sku.freightQty > 0 ? sku.freightQty : 1,
   }));
   if (!form.skus.length) {
     form.skus = [emptySkuRow(undefined, 1)];
@@ -659,6 +673,7 @@ async function save() {
         sort: (skus.length - index) * 10,
         isBase: row.isBase === 1 ? 1 : 0,
         convertQty: row.isBase === 1 ? 1 : row.convertQty,
+        freightQty: row.freightQty && row.freightQty > 0 ? row.freightQty : 1,
       })),
     };
     if (form.id) {

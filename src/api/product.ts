@@ -10,6 +10,7 @@ export interface ProductSkuVO {
   sort?: number;
   isBase?: number;
   convertQty?: number;
+  freightQty?: number;
 }
 
 export interface ProductVO {
@@ -41,6 +42,7 @@ export interface ProductSkuPayload {
   sort?: number;
   isBase?: number;
   convertQty?: number;
+  freightQty?: number;
 }
 
 export interface ProductSavePayload {

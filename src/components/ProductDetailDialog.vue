@@ -2,7 +2,7 @@
   <el-dialog
     :model-value="modelValue"
     title="商品详情"
-    width="780px"
+    width="860px"
     append-to-body
     destroy-on-close
     @update:model-value="emit('update:modelValue', $event)"
@@ -40,6 +40,9 @@
         </el-table-column>
         <el-table-column label="换算" width="80">
           <template #default="{ row }">{{ row.convertQty || 1 }}</template>
+        </el-table-column>
+        <el-table-column label="计费件数" width="90">
+          <template #default="{ row }">{{ row.freightQty || 1 }}</template>
         </el-table-column>
         <el-table-column label="启用" width="80">
           <template #default="{ row }">

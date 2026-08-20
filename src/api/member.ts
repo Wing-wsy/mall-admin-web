@@ -17,6 +17,7 @@ export interface AdminMemberVO {
   nickname?: string;
   avatarUrl?: string;
   phone?: string;
+  levelName?: string;
   points?: number;
   status: number;
   createTime?: string;

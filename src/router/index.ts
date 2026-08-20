@@ -52,6 +52,12 @@ const router = createRouter({
           meta: { title: "用户管理", permission: "member" },
         },
         {
+          path: "member-levels",
+          name: "member-levels",
+          component: () => import("@/views/MemberLevelView.vue"),
+          meta: { title: "会员等级", permission: "level" },
+        },
+        {
           path: "coupons",
           name: "coupons",
           component: () => import("@/views/CouponView.vue"),
@@ -115,7 +121,7 @@ const router = createRouter({
           path: "shop",
           name: "shop",
           component: () => import("@/views/ShopView.vue"),
-          meta: { title: "客服配置", permission: "shop" },
+          meta: { title: "店铺设置", permission: "shop" },
         },
         {
           path: "system/tenants",
