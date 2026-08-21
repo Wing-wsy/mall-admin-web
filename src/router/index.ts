@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { title: "订单管理", permission: "order" },
         },
         {
+          path: "after-sales",
+          name: "after-sales",
+          component: () => import("@/views/AfterSaleView.vue"),
+          meta: { title: "售后管理", permission: "aftersale" },
+        },
+        {
           path: "members",
           name: "members",
           component: () => import("@/views/MemberView.vue"),

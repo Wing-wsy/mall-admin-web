@@ -8,6 +8,7 @@
         <el-option :value="30" label="待收货" />
         <el-option :value="40" label="已完成" />
         <el-option :value="50" label="已取消" />
+        <el-option :value="60" label="已退款" />
       </el-select>
       <el-select v-model="orderType" placeholder="订单类型" style="width: 160px">
         <el-option value="" label="全部" />
@@ -54,10 +55,12 @@
       <el-table-column label="操作" width="200" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-          <el-button v-if="row.status === 20" link type="primary" @click="onShip(row)">发货</el-button>
-          <el-button v-if="row.status === 10 || row.status === 20" link type="danger" @click="onCancel(row)">
-            取消
+          <el-button v-if="row.status === 20 && !isAfterSaleOpen(row)" link type="primary" @click="onShip(row)">
+            发货
           </el-button>
+          <el-button v-if="row.canDirectRefund" link type="danger" @click="onDirectRefund(row)">主动退款</el-button>
+          <el-button v-if="row.status === 10" link type="danger" @click="onCancel(row)">取消</el-button>
+          <el-button v-if="row.afterSaleId" link type="primary" @click="goAfterSale(row)">售后</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -170,8 +173,10 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
+import { directRefund } from "@/api/aftersale";
 import {
   cancelAdminOrder,
   fetchAdminOrderDetail,
@@ -181,6 +186,8 @@ import {
   type AdminExpressVO,
   type AdminOrderVO,
 } from "@/api/order";
+
+const router = useRouter();
 
 const list = ref<AdminOrderVO[]>([]);
 const loading = ref(false);
@@ -212,7 +219,16 @@ function statusType(s: number) {
   if (s === 20) return "primary";
   if (s === 30) return "";
   if (s === 40) return "success";
+  if (s === 60) return "danger";
   return "info";
+}
+
+function isAfterSaleOpen(row: AdminOrderVO) {
+  return [10, 20, 21, 30].includes(Number(row.afterSaleStatus));
+}
+
+function goAfterSale(row: AdminOrderVO) {
+  router.push({ path: "/after-sales" });
 }
 
 async function load() {
@@ -305,6 +321,16 @@ async function submitShip() {
   }
 }
 
+async function onDirectRefund(row: AdminOrderVO) {
+  await ElMessageBox.confirm(
+    `将对订单 ${row.orderNo} 整单退款并回库存，确认吗？`,
+    "主动退款"
+  );
+  await directRefund(row.id);
+  ElMessage.success("已退款");
+  await load();
+}
+
 async function onCancel(row: AdminOrderVO) {
   await ElMessageBox.confirm(
     row.orderType === 2
@@ -356,6 +382,11 @@ onMounted(load);
   --el-tag-bg-color: #f3f4f6;
   --el-tag-border-color: #9ca3af;
   --el-tag-text-color: #6b7280;
+}
+.st-60 {
+  --el-tag-bg-color: #fee2e2;
+  --el-tag-border-color: #ef4444;
+  --el-tag-text-color: #b91c1c;
 }
 .trace-loc {
   margin-top: 4px;

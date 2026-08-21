@@ -4,12 +4,18 @@ export interface ShopConfigVO {
   csPhone: string;
   csEmail: string;
   notice: string;
+  returnName: string;
+  returnPhone: string;
+  returnAddress: string;
 }
 
 export interface ShopConfigSavePayload {
   csPhone?: string;
   csEmail?: string;
   notice?: string;
+  returnName?: string;
+  returnPhone?: string;
+  returnAddress?: string;
 }
 
 export interface FreightRuleVO {

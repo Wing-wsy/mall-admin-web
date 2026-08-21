@@ -48,6 +48,10 @@ export interface AdminOrderVO {
   cancelTime?: string;
   createTime?: string;
   items?: AdminOrderItemVO[];
+  afterSaleId?: number;
+  afterSaleStatus?: number;
+  afterSaleStatusText?: string;
+  canDirectRefund?: boolean;
 }
 
 export function fetchAdminOrderList(params?: { status?: number; orderType?: number; orderNo?: string }) {

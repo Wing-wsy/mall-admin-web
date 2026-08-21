@@ -6,7 +6,7 @@
     </el-tabs>
 
     <el-card v-show="tab === 'contact'" v-loading="contactLoading" class="card">
-      <p class="hint">客服信息展示在小程序「我的 - 联系客服」；公告展示在首页搜索栏下方小喇叭。均可留空。</p>
+      <p class="hint">客服信息展示在小程序「我的 - 联系客服」；公告展示在首页搜索栏下方小喇叭。退货地址用于退货退款，同意后退给用户填写物流。均可留空。</p>
       <el-form label-width="96px" style="max-width: 560px">
         <el-form-item label="客服电话">
           <el-input v-model="contact.csPhone" maxlength="32" placeholder="如 400-800-1234" />
@@ -22,6 +22,22 @@
             maxlength="200"
             show-word-limit
             placeholder="展示在首页搜索栏下方，留空则不显示"
+          />
+        </el-form-item>
+        <el-form-item label="退货联系人">
+          <el-input v-model="contact.returnName" maxlength="64" placeholder="退货退款时展示给用户" />
+        </el-form-item>
+        <el-form-item label="退货电话">
+          <el-input v-model="contact.returnPhone" maxlength="32" placeholder="如 400-800-1234" />
+        </el-form-item>
+        <el-form-item label="退货地址">
+          <el-input
+            v-model="contact.returnAddress"
+            type="textarea"
+            :rows="2"
+            maxlength="512"
+            show-word-limit
+            placeholder="省市区 + 详细地址"
           />
         </el-form-item>
         <el-form-item>
@@ -133,6 +149,9 @@ const contact = reactive({
   csPhone: "",
   csEmail: "",
   notice: "",
+  returnName: "",
+  returnPhone: "",
+  returnAddress: "",
 });
 
 function emptyRule(): FreightRuleVO {
@@ -165,6 +184,9 @@ async function loadContact() {
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
     contact.notice = data.data?.notice || "";
+    contact.returnName = data.data?.returnName || "";
+    contact.returnPhone = data.data?.returnPhone || "";
+    contact.returnAddress = data.data?.returnAddress || "";
   } finally {
     contactLoading.value = false;
   }
@@ -177,10 +199,16 @@ async function saveContact() {
       csPhone: contact.csPhone.trim(),
       csEmail: contact.csEmail.trim(),
       notice: contact.notice.trim(),
+      returnName: contact.returnName.trim(),
+      returnPhone: contact.returnPhone.trim(),
+      returnAddress: contact.returnAddress.trim(),
     });
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
     contact.notice = data.data?.notice || "";
+    contact.returnName = data.data?.returnName || "";
+    contact.returnPhone = data.data?.returnPhone || "";
+    contact.returnAddress = data.data?.returnAddress || "";
     ElMessage.success("已保存");
   } catch {
     // interceptor already toasted

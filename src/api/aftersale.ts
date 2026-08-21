@@ -1,0 +1,80 @@
+import request, { type ApiResult } from "@/utils/request";
+import type { AdminOrderItemVO } from "@/api/order";
+
+export interface AdminAfterSaleLogVO {
+  action?: string;
+  actionText?: string;
+  fromStatus?: number;
+  toStatus?: number;
+  toStatusText?: string;
+  remark?: string;
+  operatorType?: string;
+  createTime?: string;
+}
+
+export interface AdminAfterSaleVO {
+  id: number;
+  orderId: number;
+  orderNo?: string;
+  memberNo?: string;
+  orderType?: number;
+  orderStatus?: number;
+  orderStatusText?: string;
+  afterSaleNo: string;
+  type: number;
+  typeText?: string;
+  status: number;
+  statusText?: string;
+  reason?: string;
+  reasonText?: string;
+  remark?: string;
+  images?: string[];
+  refundAmount?: number;
+  refundPoints?: number;
+  rejectReason?: string;
+  returnExpressCompany?: string;
+  returnExpressCompanyName?: string;
+  returnExpressNo?: string;
+  returnName?: string;
+  returnPhone?: string;
+  returnAddress?: string;
+  returnTime?: string;
+  receiveTime?: string;
+  refundTime?: string;
+  auditTime?: string;
+  createTime?: string;
+  items?: AdminOrderItemVO[];
+  logs?: AdminAfterSaleLogVO[];
+  canApprove?: boolean;
+  canReject?: boolean;
+  canReceive?: boolean;
+}
+
+export function fetchAfterSaleList(params?: {
+  status?: number;
+  type?: number;
+  orderNo?: string;
+  afterSaleNo?: string;
+}) {
+  return request.get<ApiResult<AdminAfterSaleVO[]>>("/api/admin/after-sale/list", { params });
+}
+
+export function fetchAfterSaleDetail(id: number) {
+  return request.get<ApiResult<AdminAfterSaleVO>>(`/api/admin/after-sale/${id}`);
+}
+
+export function approveAfterSale(id: number, type?: number) {
+  return request.post<ApiResult<AdminAfterSaleVO>>(`/api/admin/after-sale/${id}/approve`, { type });
+}
+
+export function rejectAfterSale(id: number, reason: string) {
+  return request.post<ApiResult<AdminAfterSaleVO>>(`/api/admin/after-sale/${id}/reject`, { reason });
+}
+
+export function receiveAfterSale(id: number) {
+  return request.post<ApiResult<AdminAfterSaleVO>>(`/api/admin/after-sale/${id}/receive`);
+}
+
+export function directRefund(orderId: number, remark?: string) {
+  return request.post<ApiResult<AdminAfterSaleVO>>("/api/admin/after-sale/direct", { orderId, remark });
+}
