@@ -3,7 +3,7 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新增导航</el-button>
       <el-button @click="load">刷新</el-button>
-      <span class="hint">小程序首页按 2 行 5 列分页展示；启用项按排序从大到小排列</span>
+      <span class="hint">小程序首页按 2 行 5 列分页展示；图标走「图标套装」槽位，换套不必改这里。覆盖图仅在该格子要单独换图时上传</span>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="id" label="ID" width="70" />
@@ -15,9 +15,10 @@
             style="width: 40px; height: 40px"
             fit="contain"
           />
-          <span v-else class="muted">未上传</span>
+          <span v-else class="muted">套装</span>
         </template>
       </el-table-column>
+      <el-table-column prop="iconKey" label="槽位" width="130" />
       <el-table-column prop="title" label="名称" min-width="120" />
       <el-table-column label="跳转" min-width="220">
         <template #default="{ row }">
@@ -44,13 +45,33 @@
     <el-dialog v-model="visible" :title="form.id ? '编辑导航' : '新增导航'" width="560px">
       <el-form label-width="96px">
         <el-form-item label="名称" required>
-          <el-input v-model="form.title" maxlength="8" show-word-limit placeholder="如 全部分类" />
+          <el-input v-model="form.title" maxlength="8" show-word-limit placeholder="如 全部分类" @change="onTitleChange" />
         </el-form-item>
-        <el-form-item label="图标">
+        <el-form-item label="槽位">
+          <el-select
+            v-model="form.iconKey"
+            filterable
+            allow-create
+            default-first-option
+            clearable
+            placeholder="对齐套装素材，如 all_category"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="slot in navSlots"
+              :key="slot.key"
+              :label="`${slot.label}（${slot.key}）`"
+              :value="slot.key"
+            />
+          </el-select>
+          <div class="tip block">不填覆盖图时，小程序使用当前启用套装里该槽位的图</div>
+        </el-form-item>
+        <el-form-item label="覆盖图标">
           <div class="upload-row">
             <el-upload :show-file-list="false" :http-request="onUpload" accept="image/*">
-              <el-button>上传图标</el-button>
+              <el-button>上传覆盖图</el-button>
             </el-upload>
+            <el-button v-if="form.iconUrl" link type="danger" @click="form.iconUrl = ''">清除</el-button>
             <el-image
               v-if="form.iconUrl"
               :src="form.iconUrl"
@@ -58,7 +79,7 @@
               fit="contain"
             />
           </div>
-          <div class="tip block">建议正方形、透明底，约 80×80；不上传时小程序使用类型默认图标</div>
+          <div class="tip block">仅该格子要脱离套装时上传；建议正方形、透明底，约 80×80</div>
         </el-form-item>
         <el-form-item label="跳转类型" required>
           <el-select v-model="form.linkType" style="width: 100%" @change="onLinkTypeChange">
@@ -125,7 +146,7 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
@@ -169,6 +190,17 @@ const categoryCascaderProps = {
 } as const;
 
 const list = ref<NavEntryVO[]>([]);
+const navSlots = computed(() => {
+  const seen = new Set<string>();
+  const slots: { key: string; label: string }[] = [];
+  for (const item of list.value) {
+    const key = (item.iconKey || "").trim();
+    if (!key || seen.has(key)) continue;
+    seen.add(key);
+    slots.push({ key, label: item.title || key });
+  }
+  return slots;
+});
 const products = ref<ProductVO[]>([]);
 const productTree = ref<TreeOption[]>([]);
 const festivalTree = ref<TreeOption[]>([]);
@@ -180,6 +212,7 @@ const form = reactive({
   id: 0,
   title: "",
   iconUrl: "",
+  iconKey: "",
   linkType: "category",
   productId: undefined as number | undefined,
   categoryId: undefined as number | undefined,
@@ -233,6 +266,7 @@ function resetForm() {
   form.id = 0;
   form.title = "";
   form.iconUrl = "";
+  form.iconKey = "";
   form.linkType = "category";
   form.productId = products.value[0]?.id;
   form.categoryId = undefined;
@@ -260,6 +294,7 @@ async function openEdit(row: NavEntryVO) {
   form.id = row.id;
   form.title = row.title || "";
   form.iconUrl = row.iconUrl || "";
+  form.iconKey = row.iconKey || "";
   form.linkType = row.linkType || "none";
   form.productId = row.linkType === "product" ? Number(row.linkValue) : products.value[0]?.id;
   form.categoryId = row.linkType === "goodsList" ? Number(row.linkValue) : undefined;
@@ -268,6 +303,12 @@ async function openEdit(row: NavEntryVO) {
   form.sort = row.sort ?? 0;
   form.status = row.status;
   visible.value = true;
+}
+
+function onTitleChange() {
+  if (form.id || form.iconKey) return;
+  const hit = navSlots.value.find((s) => s.label === form.title.trim());
+  if (hit) form.iconKey = hit.key;
 }
 
 async function onUpload(options: UploadRequestOptions) {
@@ -318,6 +359,7 @@ async function save() {
     const payload = {
       title: form.title.trim(),
       iconUrl: form.iconUrl,
+      iconKey: form.iconKey,
       linkType: form.linkType,
       linkValue,
       sort: form.sort,

@@ -5,6 +5,7 @@ export interface ThemeVO {
   code: string;
   name: string;
   festivalCategoryId: number;
+  iconSetId?: number | null;
   festivalPath?: string;
   priority: number;
   status: number;
@@ -21,6 +22,7 @@ export interface ThemeSavePayload {
   code: string;
   name: string;
   festivalCategoryId: number;
+  iconSetId?: number | null;
   priority?: number;
   status?: number;
   tokens?: Record<string, unknown>;

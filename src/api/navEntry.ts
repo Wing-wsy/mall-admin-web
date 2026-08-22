@@ -4,6 +4,7 @@ export interface NavEntryVO {
   id: number;
   title: string;
   iconUrl?: string;
+  iconKey?: string;
   linkType: string;
   linkValue?: string;
   linkLabel?: string;
@@ -14,6 +15,7 @@ export interface NavEntryVO {
 export interface NavEntrySavePayload {
   title: string;
   iconUrl?: string;
+  iconKey?: string;
   linkType: string;
   linkValue?: string;
   sort?: number;

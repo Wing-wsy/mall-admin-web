@@ -87,6 +87,7 @@ export const useUserStore = defineStore("user", () => {
       "mall_admin_permissions",
       "mall_admin_menus",
     ].forEach((k) => localStorage.removeItem(k));
+    sessionStorage.removeItem("mall_admin_tabs");
   }
 
   return {

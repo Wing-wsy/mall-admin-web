@@ -100,6 +100,12 @@ const router = createRouter({
           meta: { title: "首页导航", permission: "nav" },
         },
         {
+          path: "icon-sets",
+          name: "icon-sets",
+          component: () => import("@/views/IconSetView.vue"),
+          meta: { title: "图标套装", permission: "iconset" },
+        },
+        {
           path: "hot-products",
           name: "hot-products",
           component: () => import("@/views/HotProductView.vue"),

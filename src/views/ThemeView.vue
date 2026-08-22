@@ -10,6 +10,11 @@
       <el-table-column prop="code" label="编码" width="120" />
       <el-table-column prop="name" label="名称" width="120" />
       <el-table-column prop="festivalPath" label="绑定节日" width="120" />
+      <el-table-column label="图标套" width="120">
+        <template #default="{ row }">
+          {{ iconSetName(row.iconSetId) }}
+        </template>
+      </el-table-column>
       <el-table-column prop="priority" label="优先级" width="90" />
       <el-table-column label="有效期(继承)" min-width="200">
         <template #default="{ row }">
@@ -53,6 +58,17 @@
               :value="f.id"
             />
           </el-select>
+        </el-form-item>
+        <el-form-item label="图标套装">
+          <el-select v-model="form.iconSetId" clearable filterable placeholder="不绑则仅跟店铺强制套" style="width: 100%">
+            <el-option
+              v-for="s in iconSets"
+              :key="s.id"
+              :label="`${s.name}（${s.code}）`"
+              :value="s.id"
+            />
+          </el-select>
+          <span class="tip">店铺未强制套时，皮肤生效会用这套图标</span>
         </el-form-item>
         <el-form-item label="优先级">
           <el-input-number v-model="form.priority" :min="0" />
@@ -152,6 +168,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import { CATEGORY_TYPE_FESTIVAL, fetchCategoryTree, type CategoryTreeVO } from "@/api/category";
 import { uploadAdminFile } from "@/api/product";
+import { fetchIconSetList, type IconSetVO } from "@/api/iconSet";
 import {
   createTheme,
   deleteTheme,
@@ -165,6 +182,7 @@ type TabItem = { index: number; text: string; iconPath: string; selectedIconPath
 
 const list = ref<ThemeVO[]>([]);
 const festivalRoots = ref<CategoryTreeVO[]>([]);
+const iconSets = ref<IconSetVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -209,6 +227,7 @@ const form = reactive({
   code: "",
   name: "",
   festivalCategoryId: undefined as number | undefined,
+  iconSetId: undefined as number | undefined,
   priority: 0,
   status: 1,
   tokens: defaultTokens(),
@@ -224,6 +243,20 @@ function formatTime(v?: string) {
 function str(map: Record<string, unknown> | undefined, key: string, fallback = "") {
   const v = map?.[key];
   return typeof v === "string" ? v : fallback;
+}
+
+async function loadIconSets() {
+  try {
+    const { data } = await fetchIconSetList();
+    iconSets.value = (data.data || []).filter((s) => s.status === 1);
+  } catch {
+    iconSets.value = [];
+  }
+}
+
+function iconSetName(id?: number | null) {
+  if (!id) return "—";
+  return iconSets.value.find((s) => s.id === id)?.name || `#${id}`;
 }
 
 async function loadFestivals() {
@@ -246,6 +279,7 @@ function resetForm() {
   form.code = "";
   form.name = "";
   form.festivalCategoryId = undefined;
+  form.iconSetId = undefined;
   form.priority = 0;
   form.status = 1;
   Object.assign(form.tokens, defaultTokens());
@@ -267,6 +301,7 @@ async function openEdit(row: ThemeVO) {
   form.code = row.code;
   form.name = row.name;
   form.festivalCategoryId = row.festivalCategoryId;
+  form.iconSetId = row.iconSetId || undefined;
   form.priority = row.priority ?? 0;
   form.status = row.status;
   Object.assign(form.tokens, defaultTokens(), row.tokens || {});
@@ -315,6 +350,7 @@ async function save() {
       code: form.code.trim(),
       name: form.name.trim(),
       festivalCategoryId: form.festivalCategoryId,
+      iconSetId: form.iconSetId || null,
       priority: form.priority,
       status: form.status,
       tokens: { ...form.tokens },
@@ -351,7 +387,7 @@ async function onDelete(row: ThemeVO) {
 }
 
 onMounted(async () => {
-  await Promise.all([load(), loadFestivals()]);
+  await Promise.all([load(), loadFestivals(), loadIconSets()]);
 });
 </script>
 
