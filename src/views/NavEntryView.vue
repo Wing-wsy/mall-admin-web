@@ -108,7 +108,7 @@
             :props="categoryCascaderProps"
             filterable
             clearable
-            placeholder="选择一级 / 二级分类"
+            placeholder="选择末级分类"
             style="width: 100%"
           />
         </el-form-item>
@@ -119,7 +119,7 @@
             :props="categoryCascaderProps"
             filterable
             clearable
-            placeholder="选择一级 / 二级分类"
+            placeholder="选择末级分类"
             style="width: 100%"
           />
         </el-form-item>
@@ -226,19 +226,20 @@ function linkTypeLabel(type: string) {
   return linkTypeOptions.find((item) => item.value === type)?.label || type;
 }
 
-function toSelectTree(nodes: CategoryTreeVO[]): TreeOption[] {
-  return (nodes || [])
-    .filter((root) => (root.children || []).length > 0)
-    .map((root) => ({
-      value: root.id,
-      label: root.name,
-      disabled: root.status !== 1,
-      children: (root.children || []).map((leaf) => ({
-        value: leaf.id,
-        label: leaf.name,
-        disabled: root.status !== 1 || leaf.status !== 1,
-      })),
-    }));
+function toSelectTree(nodes: CategoryTreeVO[], parentDisabled = false): TreeOption[] {
+  return (nodes || []).map((node) => {
+    const disabled = parentDisabled || node.status !== 1;
+    const children = toSelectTree(node.children || [], disabled);
+    const option: TreeOption = {
+      value: node.id,
+      label: node.name,
+      disabled,
+    };
+    if (children.length) {
+      option.children = children;
+    }
+    return option;
+  });
 }
 
 async function loadOptions() {

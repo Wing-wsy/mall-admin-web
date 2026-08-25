@@ -1,5 +1,6 @@
 import axios, { type InternalAxiosRequestConfig } from "axios";
 import { ElMessage } from "element-plus";
+import { rewriteMediaUrls } from "@/utils/media";
 
 export interface ApiResult<T = unknown> {
   code: number;
@@ -11,6 +12,8 @@ declare module "axios" {
   export interface AxiosRequestConfig {
     /** 登录等接口不携带旧 token */
     skipAuth?: boolean;
+    /** 由调用方自行提示错误 */
+    skipErrorMessage?: boolean;
   }
 }
 
@@ -37,16 +40,21 @@ request.interceptors.response.use(
       if (body.code === 401) {
         localStorage.removeItem("mall_admin_token");
         localStorage.removeItem("mall_admin_username");
-        if (!location.pathname.includes("/login")) {
-          ElMessage.error(body.message || "登录已失效，请重新登录");
-          location.href = "/login";
-        } else {
-          ElMessage.error(body.message || "请先登录");
+        if (!response.config.skipErrorMessage) {
+          if (!location.pathname.includes("/login")) {
+            ElMessage.error(body.message || "登录已失效，请重新登录");
+            location.href = "/login";
+          } else {
+            ElMessage.error(body.message || "请先登录");
+          }
         }
-      } else {
+      } else if (!response.config.skipErrorMessage) {
         ElMessage.error(body.message || "请求失败");
       }
       return Promise.reject(body);
+    }
+    if (body && body.data !== undefined) {
+      body.data = rewriteMediaUrls(body.data);
     }
     return response;
   },

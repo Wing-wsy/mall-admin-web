@@ -3,7 +3,13 @@
     <el-aside width="220px" class="aside">
       <div class="brand">Mall Admin</div>
       <div class="aside-menu">
-        <el-menu :default-active="active" router>
+        <el-menu
+          :default-active="active"
+          router
+          background-color="#111827"
+          text-color="#ffffff"
+          active-text-color="#ffffff"
+        >
           <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
             {{ item.title }}
           </el-menu-item>
@@ -129,6 +135,23 @@ async function onLogout() {
 .aside :deep(.el-menu) {
   border-right: none;
   background: transparent;
+  --el-menu-bg-color: transparent;
+  --el-menu-text-color: #ffffff;
+  --el-menu-hover-text-color: #ffffff;
+  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.16);
+  --el-menu-active-color: #ffffff;
+}
+.aside :deep(.el-menu-item) {
+  color: #ffffff !important;
+  font-weight: 600;
+}
+.aside :deep(.el-menu-item:hover) {
+  background: rgba(255, 255, 255, 0.16) !important;
+  color: #ffffff !important;
+}
+.aside :deep(.el-menu-item.is-active) {
+  background: #2563eb !important;
+  color: #ffffff !important;
 }
 .main-wrap {
   height: 100%;

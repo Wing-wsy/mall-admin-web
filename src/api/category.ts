@@ -1,3 +1,4 @@
+import type { AxiosRequestConfig } from "axios";
 import request, { type ApiResult } from "@/utils/request";
 
 export const CATEGORY_TYPE_PRODUCT = 1;
@@ -14,6 +15,9 @@ export interface CategoryTreeVO {
   startTime?: string;
   endTime?: string;
   activeWindow?: boolean;
+  level?: number;
+  leaf?: boolean;
+  boundCount?: number;
   children?: CategoryTreeVO[];
 }
 
@@ -35,6 +39,8 @@ export interface CategorySavePayload {
   status?: number;
   startTime?: string;
   endTime?: string;
+  /** 父节点已有商品时必须为 true，将商品转到新分类 */
+  moveProducts?: boolean;
 }
 
 export function fetchCategoryTree(type: number) {
@@ -45,8 +51,8 @@ export function fetchCategoryLeaves(type: number) {
   return request.get<ApiResult<CategoryLeafVO[]>>("/api/admin/category/leaves", { params: { type } });
 }
 
-export function createCategory(data: CategorySavePayload) {
-  return request.post<ApiResult<CategoryTreeVO>>("/api/admin/category", data);
+export function createCategory(data: CategorySavePayload, config?: AxiosRequestConfig) {
+  return request.post<ApiResult<CategoryTreeVO>>("/api/admin/category", data, config);
 }
 
 export function updateCategory(id: number, data: CategorySavePayload) {

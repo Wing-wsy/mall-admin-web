@@ -3,6 +3,7 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreateRoot">新增一级</el-button>
       <el-button @click="load">刷新</el-button>
+      <span class="hint">商品只能挂在没有子分类的末级；给已有商品的分类加子级时，会把商品转到新分类</span>
       <span v-if="isFestival" class="hint">节日起止时间配在一级；过期后小程序自动隐藏，商品关联保留</span>
     </div>
 
@@ -18,7 +19,7 @@
       <el-table-column prop="name" label="名称" min-width="180" />
       <el-table-column label="层级" width="90">
         <template #default="{ row }">
-          {{ row.parentId ? "二级" : "一级" }}
+          {{ levelLabel(row.level) }}
         </template>
       </el-table-column>
       <el-table-column v-if="isFestival" label="有效期" min-width="220">
@@ -41,9 +42,16 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="280" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
-          <el-button v-if="!row.parentId" link type="primary" @click="openCreateChild(row)">加二级</el-button>
+          <el-button
+            v-if="(row.level || 1) < MAX_LEVEL"
+            link
+            type="primary"
+            @click="openCreateChild(row)"
+          >
+            添加子分类
+          </el-button>
           <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
           <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
           <el-button link type="danger" @click="onDelete(row)">删除</el-button>
@@ -53,9 +61,17 @@
 
     <el-dialog v-model="visible" :title="dialogTitle" width="520px">
       <el-form label-width="96px">
-        <el-form-item v-if="form.parentId" label="所属一级">
+        <el-form-item v-if="form.parentId" label="上级分类">
           <el-input :model-value="parentName" disabled />
         </el-form-item>
+        <el-alert
+          v-if="!form.id && parentBoundCount > 0"
+          type="warning"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 16px"
+          :title="`「${parentName}」下已有 ${parentBoundCount} 个商品。保存后这些商品将全部转到新分类。`"
+        />
         <el-form-item label="名称" required>
           <el-input v-model="form.name" maxlength="64" />
         </el-form-item>
@@ -83,7 +99,9 @@
       </el-form>
       <template #footer>
         <el-button @click="visible = false">取消</el-button>
-        <el-button type="primary" :loading="saving" @click="save">保存</el-button>
+        <el-button type="primary" :loading="saving" @click="save">
+          {{ !form.id && parentBoundCount > 0 ? "转移到新分类并保存" : "保存" }}
+        </el-button>
       </template>
     </el-dialog>
   </div>
@@ -102,6 +120,9 @@ import {
   type CategoryTreeVO,
 } from "@/api/category";
 
+const MAX_LEVEL = 5;
+const LEVEL_NAMES = ["", "一级", "二级", "三级", "四级", "五级"];
+
 const props = defineProps<{
   type: number;
 }>();
@@ -112,6 +133,7 @@ const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
 const parentName = ref("");
+const parentBoundCount = ref(0);
 
 const form = reactive({
   id: 0,
@@ -124,11 +146,25 @@ const form = reactive({
 
 const dialogTitle = computed(() => {
   if (form.id) return "编辑分类";
-  return form.parentId ? "新增二级分类" : "新增一级分类";
+  return form.parentId ? "新增子分类" : "新增一级分类";
 });
+
+function levelLabel(level?: number) {
+  if (!level) return "一级";
+  return LEVEL_NAMES[level] || `${level}级`;
+}
 
 function formatTime(v?: string) {
   return v || "-";
+}
+
+function findNode(nodes: CategoryTreeVO[], id: number): CategoryTreeVO | undefined {
+  for (const node of nodes) {
+    if (node.id === id) return node;
+    const hit = findNode(node.children || [], id);
+    if (hit) return hit;
+  }
+  return undefined;
 }
 
 async function load() {
@@ -149,6 +185,7 @@ function resetForm() {
   form.status = 1;
   form.range = [];
   parentName.value = "";
+  parentBoundCount.value = 0;
 }
 
 function openCreateRoot() {
@@ -156,10 +193,58 @@ function openCreateRoot() {
   visible.value = true;
 }
 
+function isLeafNode(row: CategoryTreeVO) {
+  if (row.leaf === false) return false;
+  if (row.leaf === true) return true;
+  return !(row.children && row.children.length);
+}
+
+function boundCountOf(row: CategoryTreeVO) {
+  const n = Number(row.boundCount);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
+function currentParentBoundCount() {
+  if (!form.parentId) return 0;
+  const parent = findNode(tree.value, form.parentId);
+  if (!parent) return parentBoundCount.value;
+  if (!isLeafNode(parent)) return 0;
+  return boundCountOf(parent) || parentBoundCount.value;
+}
+
+function transferErrorCount(err: unknown) {
+  const msg = (err as { message?: string } | undefined)?.message || "";
+  const hit = msg.match(/有(\d+)个商品/);
+  if (hit) return Number(hit[1]) || 0;
+  return msg.includes("转移到新分类") ? 1 : 0;
+}
+
+async function confirmTransfer(count: number) {
+  try {
+    await ElMessageBox.confirm(
+      `「${parentName.value}」下已有 ${count} 个商品。添加子分类后该分类不再是叶子，这些商品将全部转移到新分类「${form.name.trim()}」。是否继续？`,
+      "转移商品确认",
+      {
+        type: "warning",
+        confirmButtonText: "转移到新分类",
+        cancelButtonText: "取消",
+      }
+    );
+    return true;
+  } catch {
+    return false;
+  }
+}
+
 function openCreateChild(row: CategoryTreeVO) {
+  if ((row.level || 1) >= MAX_LEVEL) {
+    ElMessage.warning(`最多支持${MAX_LEVEL}级分类`);
+    return;
+  }
   resetForm();
   form.parentId = row.id;
   parentName.value = row.name;
+  parentBoundCount.value = isLeafNode(row) ? boundCountOf(row) : 0;
   visible.value = true;
 }
 
@@ -169,15 +254,16 @@ function openEdit(row: CategoryTreeVO) {
   form.name = row.name;
   form.sort = row.sort ?? 0;
   form.status = row.status;
-  parentName.value = "";
+  parentBoundCount.value = 0;
   if (!row.parentId && row.startTime && row.endTime) {
     form.range = [row.startTime, row.endTime];
   } else {
     form.range = [];
   }
   if (row.parentId) {
-    const root = tree.value.find((r) => r.id === row.parentId);
-    parentName.value = root?.name || "";
+    parentName.value = findNode(tree.value, row.parentId)?.name || "";
+  } else {
+    parentName.value = "";
   }
   visible.value = true;
 }
@@ -193,6 +279,14 @@ async function save() {
       return;
     }
   }
+  const addingChild = !form.id && !!form.parentId;
+  let moveProducts = false;
+  const knownCount = addingChild ? currentParentBoundCount() : 0;
+  if (addingChild && knownCount > 0) {
+    if (!(await confirmTransfer(knownCount))) return;
+    moveProducts = true;
+    parentBoundCount.value = knownCount;
+  }
   saving.value = true;
   try {
     const payload = {
@@ -203,11 +297,23 @@ async function save() {
       status: form.status,
       startTime: isFestival.value && !form.parentId ? form.range[0] : undefined,
       endTime: isFestival.value && !form.parentId ? form.range[1] : undefined,
+      moveProducts: moveProducts || undefined,
     };
     if (form.id) {
       await updateCategory(form.id, payload);
     } else {
-      await createCategory(payload);
+      try {
+        await createCategory(payload, addingChild && !moveProducts ? { skipErrorMessage: true } : undefined);
+      } catch (err) {
+        const retryCount = transferErrorCount(err);
+        if (!addingChild || moveProducts || retryCount <= 0) {
+          ElMessage.error((err as { message?: string })?.message || "保存失败");
+          return;
+        }
+        parentBoundCount.value = retryCount;
+        if (!(await confirmTransfer(retryCount))) return;
+        await createCategory({ ...payload, moveProducts: true });
+      }
     }
     ElMessage.success("已保存");
     visible.value = false;

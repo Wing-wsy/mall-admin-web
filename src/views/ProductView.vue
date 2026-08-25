@@ -102,7 +102,7 @@
             :props="categoryCascaderProps"
             filterable
             clearable
-            placeholder="选择一级 / 二级分类"
+            placeholder="选择末级分类"
             style="width: 100%"
           />
         </el-form-item>
@@ -115,7 +115,7 @@
             clearable
             collapse-tags
             collapse-tags-tooltip
-            placeholder="可多选节日一级 / 二级"
+            placeholder="可多选末级节日分类"
             style="width: 100%"
           />
         </el-form-item>
@@ -311,7 +311,7 @@ const categoryCascaderProps = {
   emitPath: false,
 } as const;
 
-/** 筛选可选一级或二级 */
+/** 筛选可选任意层级（父节点含其下全部叶子） */
 const filterCascaderProps = {
   value: "value",
   label: "label",
@@ -394,32 +394,36 @@ const displayOriginPrice = computed(() => {
   return minRow?.originPrice != null ? Number(minRow.originPrice) : undefined;
 });
 
-/** 级联选项：回显自动展示「一级 / 二级」；只能选到叶子 */
-function toSelectTree(nodes: CategoryTreeVO[]): TreeOption[] {
-  return (nodes || [])
-    .filter((root) => (root.children || []).length > 0)
-    .map((root) => ({
-      value: root.id,
-      label: root.name,
-      disabled: root.status !== 1,
-      children: (root.children || []).map((leaf) => ({
-        value: leaf.id,
-        label: leaf.name,
-        disabled: root.status !== 1 || leaf.status !== 1,
-      })),
-    }));
+/** 级联选项：只能选叶子（含没有子分类的一级） */
+function toSelectTree(nodes: CategoryTreeVO[], parentDisabled = false): TreeOption[] {
+  return (nodes || []).map((node) => {
+    const disabled = parentDisabled || node.status !== 1;
+    const children = toSelectTree(node.children || [], disabled);
+    const option: TreeOption = {
+      value: node.id,
+      label: node.name,
+      disabled,
+    };
+    if (children.length) {
+      option.children = children;
+    }
+    return option;
+  });
 }
 
-/** 筛选树：可选一级（含其下全部二级）或二级 */
+/** 筛选树：可选任意节点（父节点展开其下全部叶子） */
 function toFilterTree(nodes: CategoryTreeVO[]): TreeOption[] {
-  return (nodes || []).map((root) => ({
-    value: root.id,
-    label: root.name,
-    children: (root.children || []).map((leaf) => ({
-      value: leaf.id,
-      label: leaf.name,
-    })),
-  }));
+  return (nodes || []).map((node) => {
+    const children = toFilterTree(node.children || []);
+    const option: TreeOption = {
+      value: node.id,
+      label: node.name,
+    };
+    if (children.length) {
+      option.children = children;
+    }
+    return option;
+  });
 }
 
 async function loadTrees() {
