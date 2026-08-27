@@ -23,6 +23,9 @@
       <el-table-column prop="points" label="积分" width="90">
         <template #default="{ row }">{{ row.points ?? 0 }}</template>
       </el-table-column>
+      <el-table-column prop="balance" label="余额" width="110">
+        <template #default="{ row }">¥{{ Number(row.balance ?? 0).toFixed(2) }}</template>
+      </el-table-column>
       <el-table-column label="收货地址" width="100">
         <template #default="{ row }">{{ row.addressCount || 0 }} 条</template>
       </el-table-column>
@@ -51,6 +54,7 @@
           <el-descriptions-item label="手机号">{{ detail.phone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="会员等级">{{ detail.levelName || "-" }}</el-descriptions-item>
           <el-descriptions-item label="积分">{{ detail.points ?? 0 }}</el-descriptions-item>
+          <el-descriptions-item label="余额">¥{{ Number(detail.balance ?? 0).toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="注册时间" :span="2">{{ detail.createTime || "-" }}</el-descriptions-item>
         </el-descriptions>
         <div class="addr-title">收货地址</div>

@@ -32,6 +32,11 @@ export interface ProductVO {
   festivalPaths?: string[];
   specSummary?: string;
   skus?: ProductSkuVO[];
+  supplierId?: number | null;
+  supplierName?: string;
+  selfOperated?: boolean;
+  statusText?: string;
+  auditRemark?: string;
 }
 
 export interface ProductSkuPayload {
@@ -57,6 +62,7 @@ export interface ProductSavePayload {
   festivalIds?: number[];
   stock?: number;
   skus: ProductSkuPayload[];
+  supplierId?: number | null;
 }
 
 export interface ProductQuery {
@@ -64,6 +70,7 @@ export interface ProductQuery {
   categoryId?: number;
   festivalId?: number;
   status?: number;
+  supplierId?: number;
 }
 
 export function fetchProductList(params?: ProductQuery) {
@@ -84,6 +91,18 @@ export function updateProduct(id: number, data: ProductSavePayload) {
 
 export function updateProductStatus(id: number, status: number) {
   return request.put<ApiResult<null>>(`/api/admin/product/${id}/status`, { status });
+}
+
+export function approveProduct(id: number) {
+  return request.post<ApiResult<ProductVO>>(`/api/admin/product/${id}/approve`);
+}
+
+export function rejectProduct(id: number, reason: string) {
+  return request.post<ApiResult<ProductVO>>(`/api/admin/product/${id}/reject`, { reason });
+}
+
+export function submitProduct(id: number) {
+  return request.post<ApiResult<ProductVO>>(`/api/admin/product/${id}/submit`);
 }
 
 export function uploadAdminFile(file: File, folder = "product") {

@@ -10,6 +10,7 @@ export interface AdminLoginResult {
   tenantType: number;
   tenantName?: string;
   roles: string[];
+  userType?: number;
   permissions: string[];
   menus: MenuNode[];
 }

@@ -3,6 +3,7 @@
     <el-tabs v-model="tab">
       <el-tab-pane label="等级配置" name="level" />
       <el-tab-pane label="手机号名单" name="phone" />
+      <el-tab-pane label="邀请链接" name="invite" />
     </el-tabs>
 
     <div v-show="tab === 'level'">
@@ -22,6 +23,17 @@
           <template #default="{ row }">{{ strip(row.discount) }} 折</template>
         </el-table-column>
         <el-table-column prop="couponStackModeText" label="优惠叠加" min-width="160" />
+        <el-table-column label="特权" min-width="120">
+          <template #default="{ row }">{{ row.privilegesText || "-" }}</template>
+        </el-table-column>
+        <el-table-column label="供应商上限" width="110">
+          <template #default="{ row }">
+            {{ (row.privileges || []).includes("SUPPLIER") ? row.supplierMax || "-" : "-" }}
+          </template>
+        </el-table-column>
+        <el-table-column label="抽成比例" width="110">
+          <template #default="{ row }">{{ strip(row.commissionRate) }}%</template>
+        </el-table-column>
         <el-table-column prop="phoneCount" label="手机号" width="90" />
         <el-table-column prop="sort" label="排序" width="80" />
         <el-table-column label="状态" width="90">
@@ -65,6 +77,43 @@
       </el-table>
     </div>
 
+    <div v-show="tab === 'invite'">
+      <div class="toolbar">
+        <el-select v-model="inviteLevelId" clearable placeholder="等级" style="width: 160px">
+          <el-option v-for="lv in levels" :key="lv.id" :label="lv.name" :value="lv.id" />
+        </el-select>
+        <el-button type="primary" @click="loadInvites">查询</el-button>
+        <el-button type="primary" @click="openInviteCreate">生成链接</el-button>
+      </div>
+      <el-table :data="invites" v-loading="inviteLoading" border stripe>
+        <el-table-column prop="levelName" label="等级" width="120" />
+        <el-table-column prop="expireAt" label="失效时间" min-width="170" />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.statusText === '有效' ? 'success' : 'info'">{{ row.statusText }}</el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="环境" width="90">
+          <template #default="{ row }">{{ envLabel(row.envVersion) }}</template>
+        </el-table-column>
+        <el-table-column label="已开通" width="110">
+          <template #default="{ row }">{{ row.redeemCount || 0 }}/{{ row.maxUses || "-" }}</template>
+        </el-table-column>
+        <el-table-column prop="remark" label="备注" min-width="120" />
+        <el-table-column prop="createTime" label="生成时间" min-width="170" />
+        <el-table-column label="操作" width="280" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="copyText(row.urlLink || row.miniPath)">复制链接</el-button>
+            <el-button link @click="copyText(row.miniPath)">复制路径</el-button>
+            <el-button link @click="openInviteLogs(row)">记录</el-button>
+            <el-button v-if="row.status === 1 && row.statusText === '有效'" link type="danger" @click="onRevokeInvite(row)">
+              作废
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </div>
+
     <el-dialog v-model="levelVisible" :title="levelForm.id ? '编辑等级' : '新增等级'" width="520px">
       <el-form label-width="108px">
         <el-form-item label="名称" required>
@@ -80,6 +129,20 @@
             <el-radio value="MUTEX">与优惠券二选一</el-radio>
           </el-radio-group>
           <div class="tip block">叠加：先会员折再按折后价用券。二选一：选券则取消会员折，券按原价计算。</div>
+        </el-form-item>
+        <el-form-item label="特权功能">
+          <el-checkbox-group v-model="levelForm.privileges">
+            <el-checkbox value="SUPPLIER">供应商</el-checkbox>
+          </el-checkbox-group>
+          <div class="tip block">勾选后，该等级会员可在小程序使用对应功能。普通用户没有这些入口。</div>
+        </el-form-item>
+        <el-form-item v-if="levelForm.privileges.includes('SUPPLIER')" label="供应商上限" required>
+          <el-input-number v-model="levelForm.supplierMax" :min="1" :max="99" />
+          <span class="tip">待审批+已通过计入上限</span>
+        </el-form-item>
+        <el-form-item label="抽成比例">
+          <el-input-number v-model="levelForm.commissionRate" :min="0" :max="100" :step="0.1" :precision="2" />
+          <span class="tip">按用户实付金额抽成，2 表示 2%</span>
         </el-form-item>
         <el-form-item label="图标">
           <div class="upload-row">
@@ -139,25 +202,89 @@
         <el-button type="primary" :loading="saving" @click="saveBatch">导入</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="inviteVisible" title="生成邀请链接" width="520px">
+      <el-form label-width="108px">
+        <el-form-item label="等级" required>
+          <el-select v-model="inviteForm.levelId" style="width: 100%" placeholder="选择等级">
+            <el-option
+              v-for="lv in enabledLevels"
+              :key="lv.id"
+              :label="`${lv.name}（${strip(lv.discount)}折）`"
+              :value="lv.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="失效时间" required>
+          <el-date-picker
+            v-model="inviteForm.expireAt"
+            type="datetime"
+            placeholder="最长 30 天"
+            value-format="YYYY-MM-DD HH:mm:ss"
+            :disabled-date="inviteDisabledDate"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="最多使用" required>
+          <el-input-number v-model="inviteForm.maxUses" :min="1" :max="100000" :step="1" :precision="0" />
+          <span class="tip">有效期内最多开通这么多人</span>
+        </el-form-item>
+        <el-form-item label="打开环境">
+          <el-radio-group v-model="inviteForm.envVersion">
+            <el-radio value="release">正式版</el-radio>
+            <el-radio value="trial">体验版</el-radio>
+            <el-radio value="develop">开发版</el-radio>
+          </el-radio-group>
+        </el-form-item>
+        <el-form-item label="备注">
+          <el-input v-model="inviteForm.remark" maxlength="64" show-word-limit placeholder="可选，如发给某某渠道" />
+        </el-form-item>
+      </el-form>
+      <div class="tip block" style="margin: 0 0 8px 108px">
+        微信 URL Link 最长 30 天。本地 mock 时复制的是小程序路径，可在开发者工具打开。
+      </div>
+      <template #footer>
+        <el-button @click="inviteVisible = false">取消</el-button>
+        <el-button type="primary" :loading="saving" @click="saveInvite">生成</el-button>
+      </template>
+    </el-dialog>
+
+    <el-dialog v-model="logVisible" title="核销记录" width="720px">
+      <el-table :data="inviteLogs" v-loading="logLoading" border stripe max-height="420">
+        <el-table-column prop="phone" label="手机号" width="130" />
+        <el-table-column prop="memberNo" label="用户编号" min-width="120">
+          <template #default="{ row }">{{ row.memberNo || "-" }}</template>
+        </el-table-column>
+        <el-table-column prop="fromLevelName" label="原等级" width="110" />
+        <el-table-column prop="toLevelName" label="开通等级" width="110" />
+        <el-table-column prop="createTime" label="时间" min-width="170" />
+      </el-table>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import { uploadAdminFile } from "@/api/product";
 import {
   batchCreateMemberLevelPhones,
   createMemberLevel,
+  createMemberLevelInvite,
   createMemberLevelPhone,
   deleteMemberLevel,
   deleteMemberLevelPhone,
+  fetchMemberLevelInviteLogs,
+  fetchMemberLevelInvites,
   fetchMemberLevelPhones,
   fetchMemberLevels,
+  revokeMemberLevelInvite,
   updateMemberLevel,
   updateMemberLevelPhone,
   updateMemberLevelStatus,
+  type AdminMemberLevelInviteLogVO,
+  type AdminMemberLevelInviteVO,
   type AdminMemberLevelPhoneVO,
   type AdminMemberLevelVO,
 } from "@/api/level";
@@ -165,14 +292,21 @@ import {
 const tab = ref("level");
 const levels = ref<AdminMemberLevelVO[]>([]);
 const phones = ref<AdminMemberLevelPhoneVO[]>([]);
+const invites = ref<AdminMemberLevelInviteVO[]>([]);
+const inviteLogs = ref<AdminMemberLevelInviteLogVO[]>([]);
 const levelLoading = ref(false);
 const phoneLoading = ref(false);
+const inviteLoading = ref(false);
+const logLoading = ref(false);
 const levelVisible = ref(false);
 const phoneVisible = ref(false);
 const batchVisible = ref(false);
+const inviteVisible = ref(false);
+const logVisible = ref(false);
 const saving = ref(false);
 const phoneQuery = ref("");
 const phoneLevelId = ref<number | undefined>();
+const inviteLevelId = ref<number | undefined>();
 
 const levelForm = reactive({
   id: 0,
@@ -180,6 +314,9 @@ const levelForm = reactive({
   iconUrl: "",
   discount: 8,
   couponStackMode: "STACK" as "STACK" | "MUTEX",
+  privileges: [] as string[],
+  supplierMax: 3,
+  commissionRate: 0,
   sort: 0,
   status: 1,
 });
@@ -194,6 +331,58 @@ const batchForm = reactive({
   phones: "",
   levelId: undefined as number | undefined,
 });
+
+const inviteForm = reactive({
+  levelId: undefined as number | undefined,
+  expireAt: "",
+  maxUses: 1,
+  envVersion: "release",
+  remark: "",
+});
+
+const enabledLevels = computed(() => levels.value.filter((lv) => lv.status === 1));
+
+function envLabel(value?: string) {
+  if (value === "trial") return "体验版";
+  if (value === "develop") return "开发版";
+  return "正式版";
+}
+
+function pad(n: number) {
+  return String(n).padStart(2, "0");
+}
+
+function formatDateTime(d: Date) {
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}:${pad(d.getSeconds())}`;
+}
+
+function defaultExpireAt() {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  return formatDateTime(d);
+}
+
+function inviteDisabledDate(date: Date) {
+  const start = new Date();
+  start.setHours(0, 0, 0, 0);
+  const max = new Date();
+  max.setDate(max.getDate() + 30);
+  max.setHours(23, 59, 59, 999);
+  return date.getTime() < start.getTime() || date.getTime() > max.getTime();
+}
+
+async function copyText(text?: string) {
+  if (!text) {
+    ElMessage.warning("暂无可复制内容");
+    return;
+  }
+  try {
+    await navigator.clipboard.writeText(text);
+    ElMessage.success("已复制");
+  } catch {
+    ElMessage.warning("复制失败，请手动复制");
+  }
+}
 
 function strip(value: number | string | undefined) {
   const n = Number(value);
@@ -230,6 +419,9 @@ function openCreate() {
   levelForm.iconUrl = "";
   levelForm.discount = 8;
   levelForm.couponStackMode = "STACK";
+  levelForm.privileges = [];
+  levelForm.supplierMax = 3;
+  levelForm.commissionRate = 0;
   levelForm.sort = 0;
   levelForm.status = 1;
   levelVisible.value = true;
@@ -241,6 +433,9 @@ function openEdit(row: AdminMemberLevelVO) {
   levelForm.iconUrl = row.iconUrl || "";
   levelForm.discount = Number(row.discount);
   levelForm.couponStackMode = row.couponStackMode;
+  levelForm.privileges = [...(row.privileges || [])];
+  levelForm.supplierMax = row.supplierMax || 3;
+  levelForm.commissionRate = Number(row.commissionRate ?? 0);
   levelForm.sort = row.sort || 0;
   levelForm.status = row.status;
   levelVisible.value = true;
@@ -263,6 +458,9 @@ async function saveLevel() {
       iconUrl: levelForm.iconUrl || null,
       discount: levelForm.discount,
       couponStackMode: levelForm.couponStackMode,
+      privileges: levelForm.privileges,
+      supplierMax: levelForm.supplierMax,
+      commissionRate: levelForm.commissionRate,
       sort: levelForm.sort,
       status: levelForm.status,
     };
@@ -362,9 +560,79 @@ async function onDeletePhone(row: AdminMemberLevelPhoneVO) {
   await loadLevels();
 }
 
+async function loadInvites() {
+  inviteLoading.value = true;
+  try {
+    const { data } = await fetchMemberLevelInvites({
+      levelId: inviteLevelId.value,
+    });
+    invites.value = data.data || [];
+  } finally {
+    inviteLoading.value = false;
+  }
+}
+
+function openInviteCreate() {
+  inviteForm.levelId = enabledLevels.value[0]?.id;
+  inviteForm.expireAt = defaultExpireAt();
+  inviteForm.maxUses = 1;
+  inviteForm.envVersion = "release";
+  inviteForm.remark = "";
+  inviteVisible.value = true;
+}
+
+async function saveInvite() {
+  if (!inviteForm.levelId || !inviteForm.expireAt) {
+    ElMessage.warning("请选择等级和失效时间");
+    return;
+  }
+  if (!inviteForm.maxUses || inviteForm.maxUses < 1) {
+    ElMessage.warning("最多使用次数至少为1");
+    return;
+  }
+  saving.value = true;
+  try {
+    const { data } = await createMemberLevelInvite({
+      levelId: inviteForm.levelId,
+      expireAt: inviteForm.expireAt,
+      maxUses: inviteForm.maxUses,
+      envVersion: inviteForm.envVersion,
+      remark: inviteForm.remark.trim() || undefined,
+    });
+    ElMessage.success("已生成");
+    inviteVisible.value = false;
+    await loadInvites();
+    const link = data.data?.urlLink || data.data?.miniPath;
+    if (link) {
+      await copyText(link);
+    }
+  } finally {
+    saving.value = false;
+  }
+}
+
+async function onRevokeInvite(row: AdminMemberLevelInviteVO) {
+  await ElMessageBox.confirm(`确定作废「${row.levelName}」这条链接？作废后不可再开通。`, "提示", { type: "warning" });
+  await revokeMemberLevelInvite(row.id);
+  ElMessage.success("已作废");
+  await loadInvites();
+}
+
+async function openInviteLogs(row: AdminMemberLevelInviteVO) {
+  logVisible.value = true;
+  logLoading.value = true;
+  try {
+    const { data } = await fetchMemberLevelInviteLogs(row.id);
+    inviteLogs.value = data.data || [];
+  } finally {
+    logLoading.value = false;
+  }
+}
+
 onMounted(() => {
   loadLevels();
   loadPhones();
+  loadInvites();
 });
 </script>
 

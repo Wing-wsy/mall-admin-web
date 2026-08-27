@@ -17,6 +17,7 @@
         <el-option :value="60" label="已完成" />
       </el-select>
       <el-button type="primary" @click="load">查询</el-button>
+      <el-button v-if="userStore.hasPermission('aftersale:audit')" @click="openReasons">主动退款原因</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="afterSaleNo" label="售后单号" min-width="180" />
@@ -97,21 +98,76 @@
         <el-button v-if="detail?.canReceive" type="primary" @click="onReceive">确认收到退货</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="reasonVisible" title="主动退款原因" width="640px">
+      <p class="hint">用于订单「主动退款」下拉，必须选一项。停用或删除不影响历史单据上已记录的文案。</p>
+      <el-button type="primary" style="margin-bottom: 12px" @click="openReasonCreate">新增</el-button>
+      <el-table :data="reasonList" v-loading="reasonLoading" border stripe>
+        <el-table-column prop="label" label="原因" min-width="200" />
+        <el-table-column prop="sort" label="排序" width="80" />
+        <el-table-column label="状态" width="90">
+          <template #default="{ row }">
+            <el-tag :type="row.status === 1 ? 'success' : 'info'" size="small">
+              {{ row.status === 1 ? "启用" : "停用" }}
+            </el-tag>
+          </template>
+        </el-table-column>
+        <el-table-column label="操作" width="200" fixed="right">
+          <template #default="{ row }">
+            <el-button link type="primary" @click="openReasonEdit(row)">编辑</el-button>
+            <el-button link @click="toggleReasonStatus(row)">
+              {{ row.status === 1 ? "停用" : "启用" }}
+            </el-button>
+            <el-button link type="danger" @click="onDeleteReason(row)">删除</el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+    </el-dialog>
+
+    <el-dialog v-model="reasonFormVisible" :title="reasonForm.id ? '编辑原因' : '新增原因'" width="440px" append-to-body>
+      <el-form label-width="72px">
+        <el-form-item label="原因" required>
+          <el-input v-model="reasonForm.label" maxlength="64" show-word-limit placeholder="展示给商家选择的文案" />
+        </el-form-item>
+        <el-form-item label="排序">
+          <el-input-number v-model="reasonForm.sort" :min="0" />
+          <span class="tip">越大越靠前</span>
+        </el-form-item>
+        <el-form-item label="状态">
+          <el-radio-group v-model="reasonForm.status">
+            <el-radio :value="1">启用</el-radio>
+            <el-radio :value="0">停用</el-radio>
+          </el-radio-group>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="reasonFormVisible = false">取消</el-button>
+        <el-button type="primary" :loading="reasonSaving" @click="saveReason">保存</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
 <script setup lang="ts">
-import { onMounted, ref } from "vue";
+import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import { useUserStore } from "@/stores/user";
 import {
   approveAfterSale,
+  createDirectRefundReason,
+  deleteDirectRefundReason,
   fetchAfterSaleDetail,
   fetchAfterSaleList,
+  fetchDirectRefundReasonList,
   receiveAfterSale,
   rejectAfterSale,
+  updateDirectRefundReason,
+  updateDirectRefundReasonStatus,
   type AdminAfterSaleVO,
+  type AfterSaleReasonVO,
 } from "@/api/aftersale";
 
+const userStore = useUserStore();
 const list = ref<AdminAfterSaleVO[]>([]);
 const loading = ref(false);
 const orderNo = ref("");
@@ -121,6 +177,17 @@ const status = ref<number | undefined>();
 const visible = ref(false);
 const detail = ref<AdminAfterSaleVO | null>(null);
 const approveType = ref(1);
+const reasonVisible = ref(false);
+const reasonLoading = ref(false);
+const reasonList = ref<AfterSaleReasonVO[]>([]);
+const reasonFormVisible = ref(false);
+const reasonSaving = ref(false);
+const reasonForm = reactive({
+  id: 0,
+  label: "",
+  sort: 0,
+  status: 1,
+});
 
 function refundText(row: AdminAfterSaleVO) {
   if (row.orderType === 1) {
@@ -200,6 +267,80 @@ async function onReceive() {
   await load();
 }
 
+async function loadReasons() {
+  reasonLoading.value = true;
+  try {
+    const { data } = await fetchDirectRefundReasonList();
+    reasonList.value = data.data || [];
+  } finally {
+    reasonLoading.value = false;
+  }
+}
+
+async function openReasons() {
+  reasonVisible.value = true;
+  await loadReasons();
+}
+
+function resetReasonForm() {
+  reasonForm.id = 0;
+  reasonForm.label = "";
+  reasonForm.sort = 0;
+  reasonForm.status = 1;
+}
+
+function openReasonCreate() {
+  resetReasonForm();
+  reasonFormVisible.value = true;
+}
+
+function openReasonEdit(row: AfterSaleReasonVO) {
+  reasonForm.id = row.id;
+  reasonForm.label = row.label;
+  reasonForm.sort = row.sort ?? 0;
+  reasonForm.status = row.status ?? 1;
+  reasonFormVisible.value = true;
+}
+
+async function saveReason() {
+  if (!reasonForm.label.trim()) {
+    ElMessage.warning("请填写原因");
+    return;
+  }
+  reasonSaving.value = true;
+  try {
+    const payload = {
+      label: reasonForm.label.trim(),
+      sort: reasonForm.sort,
+      status: reasonForm.status,
+    };
+    if (reasonForm.id) {
+      await updateDirectRefundReason(reasonForm.id, payload);
+    } else {
+      await createDirectRefundReason(payload);
+    }
+    ElMessage.success("已保存");
+    reasonFormVisible.value = false;
+    await loadReasons();
+  } finally {
+    reasonSaving.value = false;
+  }
+}
+
+async function toggleReasonStatus(row: AfterSaleReasonVO) {
+  const next = row.status === 1 ? 0 : 1;
+  await updateDirectRefundReasonStatus(row.id, next);
+  ElMessage.success(next === 1 ? "已启用" : "已停用");
+  await loadReasons();
+}
+
+async function onDeleteReason(row: AfterSaleReasonVO) {
+  await ElMessageBox.confirm(`删除原因「${row.label}」？历史单据仍保留当时文案。`, "删除原因");
+  await deleteDirectRefundReason(row.id);
+  ElMessage.success("已删除");
+  await loadReasons();
+}
+
 onMounted(load);
 </script>
 
@@ -219,5 +360,16 @@ onMounted(load);
   width: 88px;
   height: 88px;
   border-radius: 6px;
+}
+.hint {
+  margin: 0 0 12px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
+}
+.tip {
+  margin-left: 12px;
+  color: #9ca3af;
+  font-size: 13px;
 }
 </style>

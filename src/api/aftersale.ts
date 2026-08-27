@@ -75,6 +75,45 @@ export function receiveAfterSale(id: number) {
   return request.post<ApiResult<AdminAfterSaleVO>>(`/api/admin/after-sale/${id}/receive`);
 }
 
-export function directRefund(orderId: number, remark?: string) {
-  return request.post<ApiResult<AdminAfterSaleVO>>("/api/admin/after-sale/direct", { orderId, remark });
+export interface AfterSaleReasonVO {
+  id: number;
+  scene?: string;
+  code: string;
+  label: string;
+  sort?: number;
+  status?: number;
+}
+
+export interface AfterSaleReasonSavePayload {
+  label: string;
+  sort?: number;
+  status?: number;
+}
+
+export function fetchDirectRefundReasonList() {
+  return request.get<ApiResult<AfterSaleReasonVO[]>>("/api/admin/after-sale/direct-reason/list");
+}
+
+export function fetchDirectRefundReasonOptions() {
+  return request.get<ApiResult<AfterSaleReasonVO[]>>("/api/admin/after-sale/direct-reason/options");
+}
+
+export function createDirectRefundReason(data: AfterSaleReasonSavePayload) {
+  return request.post<ApiResult<AfterSaleReasonVO>>("/api/admin/after-sale/direct-reason", data);
+}
+
+export function updateDirectRefundReason(id: number, data: AfterSaleReasonSavePayload) {
+  return request.put<ApiResult<AfterSaleReasonVO>>(`/api/admin/after-sale/direct-reason/${id}`, data);
+}
+
+export function updateDirectRefundReasonStatus(id: number, status: number) {
+  return request.put<ApiResult<null>>(`/api/admin/after-sale/direct-reason/${id}/status`, { status });
+}
+
+export function deleteDirectRefundReason(id: number) {
+  return request.delete<ApiResult<null>>(`/api/admin/after-sale/direct-reason/${id}`);
+}
+
+export function directRefund(orderId: number, reasonCode: string) {
+  return request.post<ApiResult<AdminAfterSaleVO>>("/api/admin/after-sale/direct", { orderId, reasonCode });
 }

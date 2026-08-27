@@ -7,6 +7,10 @@ export interface AdminMemberLevelVO {
   discount: number | string;
   couponStackMode: "STACK" | "MUTEX";
   couponStackModeText?: string;
+  privileges?: string[];
+  privilegesText?: string;
+  supplierMax?: number;
+  commissionRate?: number | string;
   sort?: number;
   status: number;
   phoneCount?: number;
@@ -21,6 +25,9 @@ export interface MemberLevelSavePayload {
   couponStackMode: "STACK" | "MUTEX";
   sort?: number;
   status?: number;
+  privileges?: string[];
+  supplierMax?: number;
+  commissionRate?: number;
 }
 
 export interface AdminMemberLevelPhoneVO {
@@ -70,4 +77,52 @@ export function updateMemberLevelPhone(id: number, data: { phone: string; levelI
 
 export function deleteMemberLevelPhone(id: number) {
   return request.delete<ApiResult<null>>(`/api/admin/member-level/phone/${id}`);
+}
+
+export interface AdminMemberLevelInviteVO {
+  id: number;
+  levelId: number;
+  levelName?: string;
+  code: string;
+  expireAt: string;
+  status: number;
+  statusText?: string;
+  urlLink?: string;
+  miniPath?: string;
+  envVersion?: string;
+  remark?: string;
+  maxUses?: number;
+  redeemCount?: number;
+  createTime?: string;
+}
+
+export interface AdminMemberLevelInviteLogVO {
+  id: number;
+  phone: string;
+  memberNo?: string;
+  fromLevelName?: string;
+  toLevelName?: string;
+  createTime?: string;
+}
+
+export function fetchMemberLevelInvites(params?: { levelId?: number }) {
+  return request.get<ApiResult<AdminMemberLevelInviteVO[]>>("/api/admin/member-level/invite/list", { params });
+}
+
+export function createMemberLevelInvite(data: {
+  levelId: number;
+  expireAt: string;
+  maxUses: number;
+  envVersion?: string;
+  remark?: string;
+}) {
+  return request.post<ApiResult<AdminMemberLevelInviteVO>>("/api/admin/member-level/invite", data);
+}
+
+export function revokeMemberLevelInvite(id: number) {
+  return request.put<ApiResult<null>>(`/api/admin/member-level/invite/${id}/revoke`);
+}
+
+export function fetchMemberLevelInviteLogs(id: number) {
+  return request.get<ApiResult<AdminMemberLevelInviteLogVO[]>>(`/api/admin/member-level/invite/${id}/logs`);
 }

@@ -31,6 +31,19 @@
       <el-select v-model="query.status" clearable placeholder="状态" style="width: 110px">
         <el-option label="上架" :value="1" />
         <el-option label="下架" :value="0" />
+        <el-option label="待审批" :value="2" />
+        <el-option label="待上架" :value="3" />
+        <el-option label="已拒绝" :value="4" />
+      </el-select>
+      <el-select
+        v-if="!userStore.isSupplier"
+        v-model="query.supplierId"
+        clearable
+        placeholder="发货方"
+        style="width: 140px"
+      >
+        <el-option label="自营" :value="0" />
+        <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
       <el-button type="primary" @click="load">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
@@ -69,19 +82,44 @@
       </el-table-column>
       <el-table-column prop="price" label="现价" width="100" />
       <el-table-column prop="originPrice" label="原价" width="100" />
-      <el-table-column label="状态" width="100">
+      <el-table-column label="发货方" min-width="120">
         <template #default="{ row }">
-          <el-tag :type="row.status === 1 ? 'success' : 'info'">
-            {{ row.status === 1 ? "上架" : "下架" }}
-          </el-tag>
+          <el-tag v-if="row.selfOperated" type="danger" effect="plain">{{ row.supplierName || "自营" }}</el-tag>
+          <span v-else>{{ row.supplierName || "供应商" }}</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="状态" min-width="140">
+        <template #default="{ row }">
+          <el-tag :type="statusTagType(row.status)">
+            {{ row.statusText || statusLabel(row.status) }}
+          </el-tag>
+          <div v-if="row.status === 4 && row.auditRemark" class="reject-reason">{{ row.auditRemark }}</div>
+        </template>
+      </el-table-column>
+      <el-table-column label="操作" width="320" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
           <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link @click="toggleStatus(row)">
-            {{ row.status === 1 ? "下架" : "上架" }}
+          <el-button v-if="row.status === 1" link @click="toggleStatus(row, 0)">下架</el-button>
+          <el-button v-if="row.status === 0 || row.status === 3" link @click="toggleStatus(row, 1)">上架</el-button>
+          <el-button
+            v-if="row.status === 2 && userStore.hasPermission('product:approve')"
+            link
+            type="success"
+            @click="onApprove(row)"
+          >
+            通过
+          </el-button>
+          <el-button
+            v-if="row.status === 2 && userStore.hasPermission('product:approve')"
+            link
+            type="danger"
+            @click="onReject(row)"
+          >
+            拒绝
+          </el-button>
+          <el-button v-if="row.status === 4 && userStore.isSupplier" link type="warning" @click="onSubmit(row)">
+            再次提交
           </el-button>
         </template>
       </el-table-column>
@@ -118,6 +156,12 @@
             placeholder="可多选末级节日分类"
             style="width: 100%"
           />
+        </el-form-item>
+        <el-form-item label="发货方" required>
+          <el-select v-model="form.supplierId" :disabled="userStore.isSupplier && !!form.id" placeholder="选择发货方" style="width: 100%">
+            <el-option v-if="!userStore.isSupplier" label="自营" :value="0" />
+            <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="头图">
           <div class="img-list">
@@ -248,7 +292,7 @@
           </div>
           <div class="tip">详情长图，宽 750～1200，最多 20 张</div>
         </el-form-item>
-        <el-form-item label="状态">
+        <el-form-item v-if="!userStore.isSupplier" label="状态">
           <el-radio-group v-model="form.status">
             <el-radio :value="1">上架</el-radio>
             <el-radio :value="0">下架</el-radio>
@@ -267,9 +311,10 @@
 
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { ElMessage, ElMessageBox } from "element-plus";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import type { UploadRequestOptions } from "element-plus";
+import { useUserStore } from "@/stores/user";
 import {
   CATEGORY_TYPE_FESTIVAL,
   CATEGORY_TYPE_PRODUCT,
@@ -277,14 +322,18 @@ import {
   type CategoryTreeVO,
 } from "@/api/category";
 import {
+  approveProduct,
   createProduct,
   fetchProductList,
+  rejectProduct,
+  submitProduct,
   updateProduct,
   updateProductStatus,
   uploadAdminFile,
   type ProductVO,
 } from "@/api/product";
 import { fetchSpecList, type SpecVO } from "@/api/spec";
+import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 
 interface SkuRow {
   specId?: number;
@@ -329,12 +378,14 @@ const festivalCascaderProps = {
   multiple: true,
 } as const;
 
+const userStore = useUserStore();
 const list = ref<ProductVO[]>([]);
 const productTree = ref<TreeOption[]>([]);
 const festivalTree = ref<TreeOption[]>([]);
 const filterProductTree = ref<TreeOption[]>([]);
 const filterFestivalTree = ref<TreeOption[]>([]);
 const specs = ref<SpecVO[]>([]);
+const supplierOptions = ref<AdminSupplierVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
 const detailVisible = ref(false);
@@ -346,6 +397,7 @@ const query = reactive({
   categoryId: undefined as number | undefined,
   festivalId: undefined as number | undefined,
   status: undefined as number | undefined,
+  supplierId: undefined as number | undefined,
 });
 
 const form = reactive({
@@ -360,6 +412,7 @@ const form = reactive({
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
   stock: 0,
+  supplierId: 0 as number,
   skus: [] as SkuRow[],
 });
 
@@ -443,6 +496,12 @@ async function loadTrees() {
   } catch {
     specs.value = [];
   }
+  try {
+    const sup = await fetchSupplierOptions();
+    supplierOptions.value = sup.data.data || [];
+  } catch {
+    supplierOptions.value = [];
+  }
 }
 
 function emptySkuRow(specId?: number, isBase = 0): SkuRow {
@@ -518,6 +577,7 @@ async function load() {
       categoryId: query.categoryId,
       festivalId: query.festivalId,
       status: query.status,
+      supplierId: query.supplierId,
     });
     list.value = data.data || [];
   } finally {
@@ -530,6 +590,7 @@ function resetQuery() {
   query.categoryId = undefined;
   query.festivalId = undefined;
   query.status = undefined;
+  query.supplierId = undefined;
   load();
 }
 
@@ -545,6 +606,9 @@ function resetForm() {
   form.categoryId = undefined;
   form.festivalIds = [];
   form.stock = 0;
+  form.supplierId = userStore.isSupplier
+    ? (supplierOptions.value.length === 1 ? supplierOptions.value[0].id : (undefined as unknown as number))
+    : 0;
   const defaultSpec = specs.value.find((s) => s.status === 1 && s.name === "件")
     || specs.value.find((s) => s.status === 1);
   form.skus = [emptySkuRow(defaultSpec?.id, 1)];
@@ -578,6 +642,7 @@ async function openEdit(row: ProductVO) {
   form.categoryId = row.categoryId;
   form.festivalIds = [...(row.festivalIds || [])];
   form.stock = row.stock ?? 0;
+  form.supplierId = row.supplierId ?? 0;
   form.skus = (row.skus || []).map((sku) => ({
     specId: sku.specId,
     price: Number(sku.price),
@@ -656,6 +721,10 @@ async function save() {
     ElMessage.warning("库存不能为负数");
     return;
   }
+  if (userStore.isSupplier && !form.supplierId) {
+    ElMessage.warning("请选择归属供应商");
+    return;
+  }
   saving.value = true;
   try {
     const payload = {
@@ -666,6 +735,7 @@ async function save() {
       detailHtml: form.detailHtml,
       detailImageUrls: form.detailImageUrls,
       status: form.status,
+      supplierId: form.supplierId || null,
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
       stock: form.stock,
@@ -693,10 +763,50 @@ async function save() {
   }
 }
 
-async function toggleStatus(row: ProductVO) {
-  const next = row.status === 1 ? 0 : 1;
+async function toggleStatus(row: ProductVO, next: number) {
   await updateProductStatus(row.id, next);
   ElMessage.success(next === 1 ? "已上架" : "已下架");
+  await load();
+}
+
+function statusLabel(status: number) {
+  if (status === 1) return "上架";
+  if (status === 2) return "待审批";
+  if (status === 3) return "待上架";
+  if (status === 4) return "已拒绝";
+  return "下架";
+}
+
+function statusTagType(status: number) {
+  if (status === 1) return "success";
+  if (status === 2) return "warning";
+  if (status === 3) return "primary";
+  if (status === 4) return "danger";
+  return "info";
+}
+
+async function onApprove(row: ProductVO) {
+  await approveProduct(row.id);
+  ElMessage.success("已通过，待上架");
+  await load();
+}
+
+async function onReject(row: ProductVO) {
+  const { value } = await ElMessageBox.prompt("请填写拒绝原因", "拒绝商品", {
+    confirmButtonText: "拒绝",
+    inputType: "textarea",
+    inputPlaceholder: "必填",
+    inputPattern: /\S+/,
+    inputErrorMessage: "请填写拒绝原因",
+  });
+  await rejectProduct(row.id, String(value).trim());
+  ElMessage.success("已拒绝");
+  await load();
+}
+
+async function onSubmit(row: ProductVO) {
+  await submitProduct(row.id);
+  ElMessage.success("已重新提交审批");
   await load();
 }
 
@@ -740,6 +850,12 @@ onMounted(async () => {
 }
 .muted {
   color: #9ca3af;
+}
+.reject-reason {
+  margin-top: 6px;
+  color: #b91c1c;
+  font-size: 12px;
+  line-height: 1.4;
 }
 .price-preview {
   font-weight: 700;

@@ -40,10 +40,22 @@ const router = createRouter({
           meta: { title: "商品管理", permission: "product" },
         },
         {
+          path: "suppliers",
+          name: "suppliers",
+          component: () => import("@/views/SupplierView.vue"),
+          meta: { title: "供应商", permission: "supplier" },
+        },
+        {
           path: "orders",
           name: "orders",
           component: () => import("@/views/OrderView.vue"),
           meta: { title: "订单管理", permission: "order" },
+        },
+        {
+          path: "commissions",
+          name: "commissions",
+          component: () => import("@/views/CommissionView.vue"),
+          meta: { title: "佣金管理", permission: "commission" },
         },
         {
           path: "after-sales",

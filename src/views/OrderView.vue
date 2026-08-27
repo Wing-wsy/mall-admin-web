@@ -16,10 +16,23 @@
         <el-option value="1" label="积分兑换订单" />
         <el-option value="2" label="兑换券订单" />
       </el-select>
+      <el-select
+        v-if="!userStore.isSupplier"
+        v-model="supplierId"
+        clearable
+        placeholder="发货方"
+        style="width: 160px"
+      >
+        <el-option label="自营" :value="0" />
+        <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
+      </el-select>
       <el-button type="primary" @click="load">查询</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
+      <el-table-column label="发货方" width="120">
+        <template #default="{ row }">{{ row.supplierName || (row.supplierId ? "供应商" : "自营") }}</template>
+      </el-table-column>
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
@@ -69,7 +82,11 @@
       <template v-if="detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="订单号">{{ detail.orderNo }}</el-descriptions-item>
+          <el-descriptions-item label="发货方">{{ detail.supplierName || (detail.supplierId ? "供应商" : "自营") }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.memberNo || "-" }}</el-descriptions-item>
+          <el-descriptions-item v-if="detail.sellerMemberNo" label="供货会员">
+            {{ detail.sellerMemberNo }}{{ detail.sellerLevelName ? `（${detail.sellerLevelName}）` : "" }}
+          </el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="statusType(detail.status)" :class="'st-' + detail.status">{{ detail.statusText }}</el-tag>
           </el-descriptions-item>
@@ -83,6 +100,12 @@
             <span v-if="detail.orderType === 1">{{ detail.pointsAmount || 0 }} 积分</span>
             <span v-else-if="detail.orderType === 2">兑换券 / ¥0</span>
             <span v-else>¥{{ detail.payAmount }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.settleStatus" label="供货抽成">
+            {{ Number(detail.commissionRate || 0) }}% / ¥{{ Number(detail.commissionAmount || 0).toFixed(2) }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.settleStatus" label="卖家入账">
+            ¥{{ Number(detail.sellerIncome || 0).toFixed(2) }}（{{ detail.settleStatusText }}）
           </el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
@@ -168,6 +191,20 @@
         <el-button type="primary" :loading="shipping" @click="submitShip">确认发货</el-button>
       </template>
     </el-dialog>
+    <el-dialog v-model="refundVisible" title="主动退款" width="440px" @closed="resetRefund">
+      <p class="hint">将对订单 {{ refundRow?.orderNo }} 整单退款并回库存，请选择原因。</p>
+      <el-form label-width="88px">
+        <el-form-item label="退款原因" required>
+          <el-select v-model="refundCode" placeholder="请选择" style="width: 100%">
+            <el-option v-for="item in refundReasons" :key="item.code" :label="item.label" :value="item.code" />
+          </el-select>
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="refundVisible = false">取消</el-button>
+        <el-button type="danger" :loading="refunding" @click="submitRefund">确认退款</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -176,7 +213,9 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
-import { directRefund } from "@/api/aftersale";
+import { useUserStore } from "@/stores/user";
+import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
+import { directRefund, fetchDirectRefundReasonOptions, type AfterSaleReasonVO } from "@/api/aftersale";
 import {
   cancelAdminOrder,
   fetchAdminOrderDetail,
@@ -188,12 +227,15 @@ import {
 } from "@/api/order";
 
 const router = useRouter();
+const userStore = useUserStore();
 
 const list = ref<AdminOrderVO[]>([]);
 const loading = ref(false);
 const orderNo = ref("");
 const status = ref<number | undefined>();
 const orderType = ref("");
+const supplierId = ref<number | undefined>(userStore.isSupplier ? undefined : 0);
+const supplierOptions = ref<AdminSupplierVO[]>([]);
 const visible = ref(false);
 const detail = ref<AdminOrderVO | null>(null);
 const productVisible = ref(false);
@@ -205,6 +247,11 @@ const shipVisible = ref(false);
 const shipping = ref(false);
 const shipRow = ref<AdminOrderVO | null>(null);
 const shipForm = ref({ expressCompany: "", expressNo: "" });
+const refundVisible = ref(false);
+const refunding = ref(false);
+const refundRow = ref<AdminOrderVO | null>(null);
+const refundCode = ref("");
+const refundReasons = ref<AfterSaleReasonVO[]>([]);
 const companies = [
   { value: "sf", label: "顺丰速运" },
   { value: "zto", label: "中通快递" },
@@ -238,6 +285,7 @@ async function load() {
       status: status.value,
       orderType: orderType.value === "" ? undefined : Number(orderType.value),
       orderNo: orderNo.value || undefined,
+      supplierId: userStore.isSupplier ? undefined : supplierId.value,
     });
     list.value = data.data || [];
   } finally {
@@ -322,13 +370,44 @@ async function submitShip() {
 }
 
 async function onDirectRefund(row: AdminOrderVO) {
-  await ElMessageBox.confirm(
-    `将对订单 ${row.orderNo} 整单退款并回库存，确认吗？`,
-    "主动退款"
-  );
-  await directRefund(row.id);
-  ElMessage.success("已退款");
-  await load();
+  try {
+    const { data } = await fetchDirectRefundReasonOptions();
+    refundReasons.value = data.data || [];
+  } catch {
+    return;
+  }
+  if (!refundReasons.value.length) {
+    ElMessage.warning("请先在售后管理中维护主动退款原因");
+    return;
+  }
+  refundRow.value = row;
+  refundCode.value = "";
+  refundVisible.value = true;
+}
+
+function resetRefund() {
+  refundRow.value = null;
+  refundCode.value = "";
+  refundReasons.value = [];
+}
+
+async function submitRefund() {
+  if (!refundRow.value) {
+    return;
+  }
+  if (!refundCode.value) {
+    ElMessage.warning("请选择退款原因");
+    return;
+  }
+  refunding.value = true;
+  try {
+    await directRefund(refundRow.value.id, refundCode.value);
+    ElMessage.success("已退款");
+    refundVisible.value = false;
+    await load();
+  } finally {
+    refunding.value = false;
+  }
 }
 
 async function onCancel(row: AdminOrderVO) {
@@ -343,7 +422,17 @@ async function onCancel(row: AdminOrderVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  if (!userStore.isSupplier) {
+    try {
+      const { data } = await fetchSupplierOptions();
+      supplierOptions.value = data.data || [];
+    } catch {
+      supplierOptions.value = [];
+    }
+  }
+  await load();
+});
 </script>
 
 <style scoped>
@@ -351,6 +440,12 @@ onMounted(load);
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+.hint {
+  margin: 0 0 16px;
+  color: #6b7280;
+  font-size: 13px;
+  line-height: 1.6;
 }
 .goods {
   line-height: 1.4;

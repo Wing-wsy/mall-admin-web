@@ -2,6 +2,7 @@
   <div>
     <el-tabs v-model="tab">
       <el-tab-pane label="客服配置" name="contact" />
+      <el-tab-pane label="自营供应商" name="self" />
       <el-tab-pane label="运费" name="freight" />
     </el-tabs>
 
@@ -42,6 +43,36 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="contactSaving" @click="saveContact">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'self'" v-loading="contactLoading" class="card">
+      <p class="hint">
+        未绑定供应商的商品视为自营。这里维护展示用档案（名称、联系方式、邮箱、地址），不占用供应商名额，也不是供应商列表里的一条记录。
+      </p>
+      <el-form label-width="96px" style="max-width: 560px">
+        <el-form-item label="名称">
+          <el-input v-model="contact.selfName" maxlength="64" placeholder="默认「自营」" />
+        </el-form-item>
+        <el-form-item label="联系方式">
+          <el-input v-model="contact.selfContact" maxlength="32" placeholder="电话或联系人" />
+        </el-form-item>
+        <el-form-item label="邮箱">
+          <el-input v-model="contact.selfEmail" maxlength="64" placeholder="选填" />
+        </el-form-item>
+        <el-form-item label="地址">
+          <el-input
+            v-model="contact.selfAddress"
+            type="textarea"
+            :rows="2"
+            maxlength="255"
+            show-word-limit
+            placeholder="选填"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="selfSaving" @click="saveSelf">保存</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -141,6 +172,7 @@ import {
 const tab = ref("contact");
 const contactLoading = ref(false);
 const contactSaving = ref(false);
+const selfSaving = ref(false);
 const freightLoading = ref(false);
 const freightSaving = ref(false);
 const provinceOptions = ref<string[]>([]);
@@ -152,6 +184,10 @@ const contact = reactive({
   returnName: "",
   returnPhone: "",
   returnAddress: "",
+  selfName: "自营",
+  selfContact: "",
+  selfEmail: "",
+  selfAddress: "",
 });
 
 function emptyRule(): FreightRuleVO {
@@ -187,6 +223,10 @@ async function loadContact() {
     contact.returnName = data.data?.returnName || "";
     contact.returnPhone = data.data?.returnPhone || "";
     contact.returnAddress = data.data?.returnAddress || "";
+    contact.selfName = data.data?.selfName || "自营";
+    contact.selfContact = data.data?.selfContact || "";
+    contact.selfEmail = data.data?.selfEmail || "";
+    contact.selfAddress = data.data?.selfAddress || "";
   } finally {
     contactLoading.value = false;
   }
@@ -214,6 +254,27 @@ async function saveContact() {
     // interceptor already toasted
   } finally {
     contactSaving.value = false;
+  }
+}
+
+async function saveSelf() {
+  selfSaving.value = true;
+  try {
+    const { data } = await saveShopConfig({
+      selfName: contact.selfName.trim(),
+      selfContact: contact.selfContact.trim(),
+      selfEmail: contact.selfEmail.trim(),
+      selfAddress: contact.selfAddress.trim(),
+    });
+    contact.selfName = data.data?.selfName || "自营";
+    contact.selfContact = data.data?.selfContact || "";
+    contact.selfEmail = data.data?.selfEmail || "";
+    contact.selfAddress = data.data?.selfAddress || "";
+    ElMessage.success("已保存");
+  } catch {
+    // interceptor already toasted
+  } finally {
+    selfSaving.value = false;
   }
 }
 

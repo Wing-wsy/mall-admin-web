@@ -19,6 +19,7 @@ export interface AdminMemberVO {
   phone?: string;
   levelName?: string;
   points?: number;
+  balance?: number | string;
   status: number;
   createTime?: string;
   addressCount?: number;

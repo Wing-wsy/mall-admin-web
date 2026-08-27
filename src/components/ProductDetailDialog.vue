@@ -12,10 +12,26 @@
         <el-descriptions-item label="名称" :span="2">{{ detail.name }}</el-descriptions-item>
         <el-descriptions-item label="副标题" :span="2">{{ detail.subtitle || "-" }}</el-descriptions-item>
         <el-descriptions-item label="商品分类">{{ detail.categoryPath || "-" }}</el-descriptions-item>
+        <el-descriptions-item label="所属供应商">
+          <el-button
+            v-if="detail.selfOperated || !detail.supplierId"
+            link
+            type="danger"
+            @click="openSelf"
+          >
+            {{ detail.supplierName || "自营" }}
+          </el-button>
+          <el-button v-else link type="primary" @click="openSupplier">
+            {{ detail.supplierName || "供应商" }}
+          </el-button>
+        </el-descriptions-item>
         <el-descriptions-item label="状态">
-          <el-tag :type="detail.status === 1 ? 'success' : 'info'" size="small">
-            {{ detail.status === 1 ? "上架" : "下架" }}
+          <el-tag :type="statusTagType(detail.status)" size="small">
+            {{ detail.statusText || statusLabel(detail.status) }}
           </el-tag>
+        </el-descriptions-item>
+        <el-descriptions-item v-if="detail.auditRemark" label="拒绝原因" :span="2">
+          {{ detail.auditRemark }}
         </el-descriptions-item>
         <el-descriptions-item label="现价">¥{{ detail.price }}</el-descriptions-item>
         <el-descriptions-item label="原价">{{ detail.originPrice != null ? `¥${detail.originPrice}` : "-" }}</el-descriptions-item>
@@ -82,11 +98,13 @@
       <div v-else class="muted">无</div>
     </template>
   </el-dialog>
+  <SupplierDetailDialog v-model="supplierVisible" :supplier-id="supplierId" :self-operated="selfOperated" />
 </template>
 
 <script setup lang="ts">
 import { ref, watch } from "vue";
 import { fetchProductDetail, type ProductVO } from "@/api/product";
+import SupplierDetailDialog from "@/components/SupplierDetailDialog.vue";
 
 const props = defineProps<{
   modelValue: boolean;
@@ -98,12 +116,50 @@ const emit = defineEmits<{
 }>();
 
 const detail = ref<ProductVO | null>(null);
+const supplierVisible = ref(false);
+const supplierId = ref<number | undefined>();
+const selfOperated = ref(false);
+
+function openSupplier() {
+  const id = detail.value?.supplierId;
+  if (!id) {
+    return;
+  }
+  selfOperated.value = false;
+  supplierId.value = id;
+  supplierVisible.value = true;
+}
+
+function openSelf() {
+  selfOperated.value = true;
+  supplierId.value = undefined;
+  supplierVisible.value = true;
+}
+
+function statusLabel(status?: number) {
+  if (status === 1) return "上架";
+  if (status === 2) return "待审批";
+  if (status === 3) return "待上架";
+  if (status === 4) return "已拒绝";
+  return "下架";
+}
+
+function statusTagType(status?: number) {
+  if (status === 1) return "success";
+  if (status === 2) return "warning";
+  if (status === 3) return "primary";
+  if (status === 4) return "danger";
+  return "info";
+}
 
 watch(
   [() => props.modelValue, () => props.productId],
   async ([visible, id]) => {
     if (!visible || !id) {
       detail.value = null;
+      supplierVisible.value = false;
+      supplierId.value = undefined;
+      selfOperated.value = false;
       return;
     }
     try {

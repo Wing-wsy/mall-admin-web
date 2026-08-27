@@ -19,6 +19,7 @@ export const useUserStore = defineStore("user", () => {
   const tenantId = ref<number | null>(Number(localStorage.getItem("mall_admin_tenant_id") || 0) || null);
   const tenantName = ref(localStorage.getItem("mall_admin_tenant_name") || "");
   const tenantType = ref<number | null>(Number(localStorage.getItem("mall_admin_tenant_type") || 0) || null);
+  const userType = ref<number | null>(Number(localStorage.getItem("mall_admin_user_type") || 0) || null);
   const permissions = ref<string[]>(JSON.parse(localStorage.getItem("mall_admin_permissions") || "[]"));
   const menus = ref<MenuNode[]>(JSON.parse(localStorage.getItem("mall_admin_menus") || "[]"));
 
@@ -36,6 +37,8 @@ export const useUserStore = defineStore("user", () => {
     return list;
   });
 
+  const isSupplier = computed(() => userType.value === 2);
+
   function hasPermission(code: string) {
     return permissions.value.includes(code);
   }
@@ -47,6 +50,7 @@ export const useUserStore = defineStore("user", () => {
     tenantId?: number;
     tenantName?: string;
     tenantType?: number;
+    userType?: number;
     permissions?: string[];
     menus?: MenuNode[];
   }) {
@@ -56,6 +60,7 @@ export const useUserStore = defineStore("user", () => {
     tenantId.value = profile.tenantId ?? null;
     tenantName.value = profile.tenantName || "";
     tenantType.value = profile.tenantType ?? null;
+    userType.value = profile.userType ?? 1;
     permissions.value = profile.permissions || [];
     menus.value = profile.menus || [];
     localStorage.setItem("mall_admin_token", profile.token);
@@ -64,6 +69,7 @@ export const useUserStore = defineStore("user", () => {
     localStorage.setItem("mall_admin_tenant_id", String(profile.tenantId || ""));
     localStorage.setItem("mall_admin_tenant_name", tenantName.value);
     localStorage.setItem("mall_admin_tenant_type", String(profile.tenantType || ""));
+    localStorage.setItem("mall_admin_user_type", String(profile.userType || 1));
     localStorage.setItem("mall_admin_permissions", JSON.stringify(permissions.value));
     localStorage.setItem("mall_admin_menus", JSON.stringify(menus.value));
   }
@@ -75,6 +81,7 @@ export const useUserStore = defineStore("user", () => {
     tenantId.value = null;
     tenantName.value = "";
     tenantType.value = null;
+    userType.value = null;
     permissions.value = [];
     menus.value = [];
     [
@@ -84,6 +91,7 @@ export const useUserStore = defineStore("user", () => {
       "mall_admin_tenant_id",
       "mall_admin_tenant_name",
       "mall_admin_tenant_type",
+      "mall_admin_user_type",
       "mall_admin_permissions",
       "mall_admin_menus",
     ].forEach((k) => localStorage.removeItem(k));
@@ -97,6 +105,8 @@ export const useUserStore = defineStore("user", () => {
     tenantId,
     tenantName,
     tenantType,
+    userType,
+    isSupplier,
     permissions,
     menus,
     flatMenus,

@@ -7,6 +7,10 @@ export interface ShopConfigVO {
   returnName: string;
   returnPhone: string;
   returnAddress: string;
+  selfName: string;
+  selfContact: string;
+  selfEmail: string;
+  selfAddress: string;
 }
 
 export interface ShopConfigSavePayload {
@@ -16,6 +20,17 @@ export interface ShopConfigSavePayload {
   returnName?: string;
   returnPhone?: string;
   returnAddress?: string;
+  selfName?: string;
+  selfContact?: string;
+  selfEmail?: string;
+  selfAddress?: string;
+}
+
+export interface SelfOperatedVO {
+  name: string;
+  contact?: string;
+  email?: string;
+  address?: string;
 }
 
 export interface FreightRuleVO {
@@ -47,6 +62,10 @@ export function fetchShopConfig() {
 
 export function saveShopConfig(data: ShopConfigSavePayload) {
   return request.put<ApiResult<ShopConfigVO>>("/api/admin/shop/config", data);
+}
+
+export function fetchSelfOperated() {
+  return request.get<ApiResult<SelfOperatedVO>>("/api/admin/shop/self-operated");
 }
 
 export function fetchFreightTemplate() {

@@ -15,10 +15,14 @@ export interface AdminOrderItemVO {
 export interface AdminOrderVO {
   id: number;
   memberNo?: string;
+  sellerMemberNo?: string;
+  sellerLevelName?: string;
   orderNo: string;
   status: number;
   statusText: string;
   orderType?: number;
+  supplierId?: number | null;
+  supplierName?: string;
   goodsAmount: number;
   freightAmount: number;
   couponAmount?: number;
@@ -30,6 +34,11 @@ export interface AdminOrderVO {
   voucherCodeId?: number;
   voucherCodeMask?: string;
   payAmount: number;
+  commissionRate?: number | string;
+  commissionAmount?: number | string;
+  sellerIncome?: number | string;
+  settleStatus?: number;
+  settleStatusText?: string;
   payChannel?: string;
   payStatus?: number;
   payTime?: string;
@@ -54,7 +63,12 @@ export interface AdminOrderVO {
   canDirectRefund?: boolean;
 }
 
-export function fetchAdminOrderList(params?: { status?: number; orderType?: number; orderNo?: string }) {
+export function fetchAdminOrderList(params?: {
+  status?: number;
+  orderType?: number;
+  orderNo?: string;
+  supplierId?: number;
+}) {
   return request.get<ApiResult<AdminOrderVO[]>>("/api/admin/order/list", { params });
 }
 
