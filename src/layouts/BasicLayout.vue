@@ -10,8 +10,25 @@
           text-color="#ffffff"
           active-text-color="#ffffff"
         >
-          <el-menu-item v-for="item in menus" :key="item.path" :index="item.path">
-            {{ item.title }}
+          <el-menu-item v-if="dashboardItem?.path" :index="dashboardItem.path">
+            {{ dashboardItem.name }}
+          </el-menu-item>
+          <el-sub-menu v-for="group in groupMenus" :key="group.code" :index="group.code">
+            <template #title>{{ group.name }}</template>
+            <el-menu-item
+              v-for="child in group.children"
+              :key="child.path"
+              :index="child.path!"
+            >
+              {{ child.name }}
+            </el-menu-item>
+          </el-sub-menu>
+          <el-menu-item
+            v-for="item in extraItems"
+            :key="item.path"
+            :index="item.path!"
+          >
+            {{ item.name }}
           </el-menu-item>
         </el-menu>
       </div>
@@ -52,9 +69,10 @@
 </template>
 
 <script setup lang="ts">
-import { computed, watch } from "vue";
+import { computed, onMounted, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { logoutAdmin } from "@/api/auth";
+import { fetchAdminMe, logoutAdmin } from "@/api/auth";
+import { buildSidebarMenus } from "@/config/menuGroups";
 import { useTabStore } from "@/stores/tabs";
 import { useUserStore } from "@/stores/user";
 
@@ -63,7 +81,12 @@ const router = useRouter();
 const userStore = useUserStore();
 const tabStore = useTabStore();
 
-const menus = computed(() => userStore.flatMenus);
+const sidebarMenus = computed(() => buildSidebarMenus(userStore.menus));
+const dashboardItem = computed(() => sidebarMenus.value.find((n) => n.code === "dashboard"));
+const groupMenus = computed(() => sidebarMenus.value.filter((n) => n.children?.length));
+const extraItems = computed(() =>
+  sidebarMenus.value.filter((n) => n.code !== "dashboard" && !n.children?.length && n.path)
+);
 const active = computed(() => route.path);
 
 watch(
@@ -72,11 +95,21 @@ watch(
     if (route.path === "/login") return;
     tabStore.add({
       path: route.path,
-      title: String(route.meta.title || menus.value.find((m) => m.path === route.path)?.title || "未命名"),
+      title: String(route.meta.title || userStore.findMenuTitle(route.path) || "未命名"),
     });
   },
   { immediate: true }
 );
+
+onMounted(async () => {
+  if (!userStore.token) return;
+  try {
+    const { data } = await fetchAdminMe();
+    if (data?.data) userStore.login(data.data);
+  } catch {
+    // keep cached profile
+  }
+});
 
 function openTab(path: string) {
   if (path !== route.path) router.push(path);
@@ -141,17 +174,26 @@ async function onLogout() {
   --el-menu-hover-bg-color: rgba(255, 255, 255, 0.16);
   --el-menu-active-color: #ffffff;
 }
-.aside :deep(.el-menu-item) {
+.aside :deep(.el-menu-item),
+.aside :deep(.el-sub-menu__title) {
   color: #ffffff !important;
   font-weight: 600;
 }
-.aside :deep(.el-menu-item:hover) {
+.aside :deep(.el-menu-item:hover),
+.aside :deep(.el-sub-menu__title:hover) {
   background: rgba(255, 255, 255, 0.16) !important;
   color: #ffffff !important;
 }
 .aside :deep(.el-menu-item.is-active) {
   background: #2563eb !important;
   color: #ffffff !important;
+}
+.aside :deep(.el-sub-menu .el-menu-item) {
+  padding-left: 40px !important;
+  font-weight: 500;
+}
+.aside :deep(.el-sub-menu__icon-arrow) {
+  color: #9ca3af;
 }
 .main-wrap {
   height: 100%;

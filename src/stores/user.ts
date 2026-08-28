@@ -37,6 +37,19 @@ export const useUserStore = defineStore("user", () => {
     return list;
   });
 
+  function findMenuTitle(path: string): string | undefined {
+    const walk = (nodes: MenuNode[]): string | undefined => {
+      for (const n of nodes || []) {
+        if (n.path === path) return n.name;
+        if (n.children?.length) {
+          const hit = walk(n.children);
+          if (hit) return hit;
+        }
+      }
+    };
+    return walk(menus.value);
+  }
+
   const isSupplier = computed(() => userType.value === 2);
 
   function hasPermission(code: string) {
@@ -110,6 +123,7 @@ export const useUserStore = defineStore("user", () => {
     permissions,
     menus,
     flatMenus,
+    findMenuTitle,
     hasPermission,
     login,
     logout,

@@ -172,6 +172,12 @@ const router = createRouter({
           meta: { title: "角色管理", permission: "system:role" },
         },
         {
+          path: "system/oper-logs",
+          name: "system-oper-logs",
+          component: () => import("@/views/system/OperLogView.vue"),
+          meta: { title: "操作日志", permission: "system:operlog" },
+        },
+        {
           path: "ping",
           name: "ping",
           component: () => import("@/views/PingView.vue"),
