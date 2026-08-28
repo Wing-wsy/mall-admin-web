@@ -11,6 +11,9 @@ export interface AdminMemberLevelVO {
   privilegesText?: string;
   supplierMax?: number;
   commissionRate?: number | string;
+  shareCommissionRate?: number | string;
+  shareRateMin?: number | string;
+  shareRateMax?: number | string;
   sort?: number;
   status: number;
   phoneCount?: number;
@@ -28,6 +31,9 @@ export interface MemberLevelSavePayload {
   privileges?: string[];
   supplierMax?: number;
   commissionRate?: number;
+  shareCommissionRate?: number;
+  shareRateMin?: number;
+  shareRateMax?: number;
 }
 
 export interface AdminMemberLevelPhoneVO {

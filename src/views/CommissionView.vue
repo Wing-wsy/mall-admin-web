@@ -1,10 +1,14 @@
 <template>
   <div>
+    <el-tabs v-model="kind" @tab-change="load">
+      <el-tab-pane label="供货佣金" name="supply" />
+      <el-tab-pane label="分享佣金" name="share" />
+    </el-tabs>
     <div class="toolbar">
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="load" />
       <el-input
         v-model="sellerMemberNo"
-        placeholder="供货会员ID"
+        :placeholder="kind === 'share' ? '上线会员ID' : '供货会员ID'"
         clearable
         style="width: 180px"
         @keyup.enter="load"
@@ -18,11 +22,23 @@
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
-      <el-table-column prop="sellerMemberNo" label="供货会员" min-width="140">
+      <el-table-column v-if="kind === 'share'" prop="uplineMemberNo" label="上线会员" min-width="140">
+        <template #default="{ row }">{{ row.uplineMemberNo || "-" }}</template>
+      </el-table-column>
+      <el-table-column v-else prop="sellerMemberNo" label="供货会员" min-width="140">
         <template #default="{ row }">{{ row.sellerMemberNo || "-" }}</template>
       </el-table-column>
-      <el-table-column prop="sellerLevelName" label="供货等级" width="120">
+      <el-table-column v-if="kind !== 'share'" prop="sellerLevelName" label="供货等级" width="120">
         <template #default="{ row }">{{ row.sellerLevelName || "-" }}</template>
+      </el-table-column>
+      <el-table-column v-if="kind === 'share'" label="分享比例" width="100">
+        <template #default="{ row }">{{ rateText(row.shareRate) }}%</template>
+      </el-table-column>
+      <el-table-column v-if="kind === 'share'" label="原价货款" width="110">
+        <template #default="{ row }">¥{{ money(row.shareListGoodsAmount) }}</template>
+      </el-table-column>
+      <el-table-column v-if="kind === 'share'" label="加价差额" width="110">
+        <template #default="{ row }">¥{{ money(row.shareSpread) }}</template>
       </el-table-column>
       <el-table-column label="发货方" width="120">
         <template #default="{ row }">{{ row.supplierName || (row.supplierId ? "供应商" : "自营") }}</template>
@@ -115,6 +131,7 @@ const loading = ref(false);
 const orderNo = ref("");
 const sellerMemberNo = ref("");
 const settleStatus = ref<number | undefined>();
+const kind = ref("supply");
 const visible = ref(false);
 const detail = ref<AdminOrderVO | null>(null);
 const productVisible = ref(false);
@@ -152,6 +169,7 @@ async function load() {
       orderNo: orderNo.value || undefined,
       sellerMemberNo: sellerMemberNo.value || undefined,
       settleStatus: settleStatus.value,
+      kind: kind.value,
     });
     list.value = data.data || [];
   } finally {

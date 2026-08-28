@@ -39,6 +39,14 @@ export interface AdminOrderVO {
   sellerIncome?: number | string;
   settleStatus?: number;
   settleStatusText?: string;
+  shareUplineMemberNo?: string;
+  shareRate?: number | string;
+  shareListGoodsAmount?: number | string;
+  shareSpread?: number | string;
+  shareCommissionAmount?: number | string;
+  shareIncome?: number | string;
+  shareSettleStatus?: number;
+  shareSettleStatusText?: string;
   payChannel?: string;
   payStatus?: number;
   payTime?: string;

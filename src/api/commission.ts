@@ -14,6 +14,15 @@ export interface AdminCommissionVO {
   sellerIncome?: number | string;
   settleStatus?: number;
   settleStatusText?: string;
+  kind?: string;
+  uplineMemberNo?: string;
+  shareRate?: number | string;
+  shareListGoodsAmount?: number | string;
+  shareSpread?: number | string;
+  shareCommissionAmount?: number | string;
+  shareIncome?: number | string;
+  shareSettleStatus?: number;
+  shareSettleStatusText?: string;
   orderStatus?: number;
   orderStatusText?: string;
   finishTime?: string;
@@ -24,6 +33,7 @@ export function fetchAdminCommissionList(params?: {
   orderNo?: string;
   sellerMemberNo?: string;
   settleStatus?: number;
+  kind?: string;
 }) {
   return request.get<ApiResult<AdminCommissionVO[]>>("/api/admin/commission/list", { params });
 }

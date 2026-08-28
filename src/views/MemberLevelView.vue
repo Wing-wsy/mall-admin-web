@@ -31,8 +31,22 @@
             {{ (row.privileges || []).includes("SUPPLIER") ? row.supplierMax || "-" : "-" }}
           </template>
         </el-table-column>
-        <el-table-column label="抽成比例" width="110">
+        <el-table-column label="供货抽成" width="110">
           <template #default="{ row }">{{ strip(row.commissionRate) }}%</template>
+        </el-table-column>
+        <el-table-column label="分享抽成" width="110">
+          <template #default="{ row }">
+            {{ (row.privileges || []).includes("SHARE") ? `${strip(row.shareCommissionRate)}%` : "-" }}
+          </template>
+        </el-table-column>
+        <el-table-column label="分享比例" min-width="140">
+          <template #default="{ row }">
+            {{
+              (row.privileges || []).includes("SHARE")
+                ? `${strip(row.shareRateMin)}%~${strip(row.shareRateMax)}%`
+                : "-"
+            }}
+          </template>
         </el-table-column>
         <el-table-column prop="phoneCount" label="手机号" width="90" />
         <el-table-column prop="sort" label="排序" width="80" />
@@ -114,7 +128,7 @@
       </el-table>
     </div>
 
-    <el-dialog v-model="levelVisible" :title="levelForm.id ? '编辑等级' : '新增等级'" width="520px">
+    <el-dialog v-model="levelVisible" :title="levelForm.id ? '编辑等级' : '新增等级'" width="560px">
       <el-form label-width="108px">
         <el-form-item label="名称" required>
           <el-input v-model="levelForm.name" maxlength="32" show-word-limit />
@@ -133,17 +147,34 @@
         <el-form-item label="特权功能">
           <el-checkbox-group v-model="levelForm.privileges">
             <el-checkbox value="SUPPLIER">供应商</el-checkbox>
+            <el-checkbox value="SHARE">分享</el-checkbox>
           </el-checkbox-group>
-          <div class="tip block">勾选后，该等级会员可在小程序使用对应功能。普通用户没有这些入口。</div>
+          <div class="tip block">勾选后出现对应配置，该等级会员可在小程序使用该功能。普通用户没有这些入口。</div>
         </el-form-item>
-        <el-form-item v-if="levelForm.privileges.includes('SUPPLIER')" label="供应商上限" required>
-          <el-input-number v-model="levelForm.supplierMax" :min="1" :max="99" />
-          <span class="tip">待审批+已通过计入上限</span>
-        </el-form-item>
-        <el-form-item label="抽成比例">
-          <el-input-number v-model="levelForm.commissionRate" :min="0" :max="100" :step="0.1" :precision="2" />
-          <span class="tip">按用户实付金额抽成，2 表示 2%</span>
-        </el-form-item>
+        <div v-if="levelForm.privileges.includes('SUPPLIER')" class="priv-block">
+          <div class="priv-head">供应商</div>
+          <el-form-item label="供应商上限" required>
+            <el-input-number v-model="levelForm.supplierMax" :min="1" :max="99" />
+            <span class="tip">待审批+已通过计入上限</span>
+          </el-form-item>
+          <el-form-item label="供货抽成">
+            <el-input-number v-model="levelForm.commissionRate" :min="0" :max="100" :step="0.1" :precision="2" />
+            <span class="tip">非自营订单按去掉加价后的实付抽成，2 表示 2%</span>
+          </el-form-item>
+        </div>
+        <div v-if="levelForm.privileges.includes('SHARE')" class="priv-block priv-share">
+          <div class="priv-head">分享</div>
+          <el-form-item label="分享抽成" required>
+            <el-input-number v-model="levelForm.shareCommissionRate" :min="0" :max="100" :step="0.1" :precision="2" />
+            <span class="tip">加价差额抽成，20 表示 20%</span>
+          </el-form-item>
+          <el-form-item label="分享比例" required>
+            <el-input-number v-model="levelForm.shareRateMin" :min="100" :max="999.99" :step="1" :precision="2" />
+            <span class="range-sep">~</span>
+            <el-input-number v-model="levelForm.shareRateMax" :min="100" :max="999.99" :step="1" :precision="2" />
+            <span class="tip">含两端，120 表示 120%</span>
+          </el-form-item>
+        </div>
         <el-form-item label="图标">
           <div class="upload-row">
             <el-upload :show-file-list="false" :http-request="onUpload" accept="image/*">
@@ -317,6 +348,9 @@ const levelForm = reactive({
   privileges: [] as string[],
   supplierMax: 3,
   commissionRate: 0,
+  shareCommissionRate: 20,
+  shareRateMin: 120,
+  shareRateMax: 150,
   sort: 0,
   status: 1,
 });
@@ -422,6 +456,9 @@ function openCreate() {
   levelForm.privileges = [];
   levelForm.supplierMax = 3;
   levelForm.commissionRate = 0;
+  levelForm.shareCommissionRate = 20;
+  levelForm.shareRateMin = 120;
+  levelForm.shareRateMax = 150;
   levelForm.sort = 0;
   levelForm.status = 1;
   levelVisible.value = true;
@@ -436,6 +473,9 @@ function openEdit(row: AdminMemberLevelVO) {
   levelForm.privileges = [...(row.privileges || [])];
   levelForm.supplierMax = row.supplierMax || 3;
   levelForm.commissionRate = Number(row.commissionRate ?? 0);
+  levelForm.shareCommissionRate = Number(row.shareCommissionRate ?? 20);
+  levelForm.shareRateMin = Number(row.shareRateMin || 120);
+  levelForm.shareRateMax = Number(row.shareRateMax || 150);
   levelForm.sort = row.sort || 0;
   levelForm.status = row.status;
   levelVisible.value = true;
@@ -461,6 +501,9 @@ async function saveLevel() {
       privileges: levelForm.privileges,
       supplierMax: levelForm.supplierMax,
       commissionRate: levelForm.commissionRate,
+      shareCommissionRate: levelForm.shareCommissionRate,
+      shareRateMin: levelForm.shareRateMin,
+      shareRateMax: levelForm.shareRateMax,
       sort: levelForm.sort,
       status: levelForm.status,
     };
@@ -659,5 +702,29 @@ onMounted(() => {
   display: flex;
   align-items: center;
   gap: 12px;
+}
+.priv-block {
+  margin: 0 0 16px;
+  padding: 10px 12px 6px;
+  background: #fff7f5;
+  border: 1px solid #ffe4dc;
+  border-radius: 8px;
+}
+.priv-block.priv-share {
+  background: #f5f8ff;
+  border-color: #dbe4ff;
+}
+.priv-head {
+  margin: 0 0 8px 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #9a3412;
+}
+.priv-share .priv-head {
+  color: #1e3a8a;
+}
+.range-sep {
+  margin: 0 8px;
+  color: #6b7280;
 }
 </style>

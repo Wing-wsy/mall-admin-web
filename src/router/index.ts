@@ -58,6 +58,12 @@ const router = createRouter({
           meta: { title: "佣金管理", permission: "commission" },
         },
         {
+          path: "balance-logs",
+          name: "balance-logs",
+          component: () => import("@/views/BalanceLogView.vue"),
+          meta: { title: "资金流水", permission: "balance" },
+        },
+        {
           path: "after-sales",
           name: "after-sales",
           component: () => import("@/views/AfterSaleView.vue"),

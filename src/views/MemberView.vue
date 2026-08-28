@@ -20,6 +20,12 @@
       <el-table-column prop="levelName" label="会员等级" width="120">
         <template #default="{ row }">{{ row.levelName || "-" }}</template>
       </el-table-column>
+      <el-table-column label="上线" min-width="140">
+        <template #default="{ row }">{{ row.uplineMemberNo || "-" }}</template>
+      </el-table-column>
+      <el-table-column label="下线" width="80">
+        <template #default="{ row }">{{ row.downlineCount || 0 }}</template>
+      </el-table-column>
       <el-table-column prop="points" label="积分" width="90">
         <template #default="{ row }">{{ row.points ?? 0 }}</template>
       </el-table-column>
@@ -35,9 +41,10 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="注册时间" min-width="170" />
-      <el-table-column label="操作" width="160" fixed="right">
+      <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+          <el-button link type="primary" @click="openLogs(row)">资金流水</el-button>
           <el-button link type="primary" @click="openIssue(row)">发券</el-button>
         </template>
       </el-table-column>
@@ -53,6 +60,8 @@
           <el-descriptions-item label="用户昵称">{{ detail.nickname || "-" }}</el-descriptions-item>
           <el-descriptions-item label="手机号">{{ detail.phone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="会员等级">{{ detail.levelName || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="上线">{{ detail.uplineMemberNo || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="下线数">{{ detail.downlineCount || 0 }}</el-descriptions-item>
           <el-descriptions-item label="积分">{{ detail.points ?? 0 }}</el-descriptions-item>
           <el-descriptions-item label="余额">¥{{ Number(detail.balance ?? 0).toFixed(2) }}</el-descriptions-item>
           <el-descriptions-item label="注册时间" :span="2">{{ detail.createTime || "-" }}</el-descriptions-item>
@@ -70,6 +79,14 @@
           <el-table-column prop="fullAddress" label="地址" min-width="240" />
         </el-table>
         <el-empty v-else description="暂无收货地址" :image-size="64" />
+        <div class="addr-title">下线列表</div>
+        <el-table v-if="detail.downlines?.length" :data="detail.downlines" border>
+          <el-table-column prop="memberNo" label="用户ID" min-width="140" />
+          <el-table-column prop="nickname" label="昵称" min-width="120" />
+          <el-table-column prop="phone" label="手机号" width="140" />
+          <el-table-column prop="createTime" label="绑定时间" min-width="170" />
+        </el-table>
+        <el-empty v-else description="暂无下线" :image-size="64" />
       </template>
     </el-dialog>
 
@@ -97,12 +114,14 @@
 
 <script setup lang="ts">
 import { onMounted, ref } from "vue";
+import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { fetchAdminMemberDetail, fetchAdminMemberList, type AdminMemberVO } from "@/api/member";
 import { fetchCouponTemplates, issueCoupons, type AdminCouponTemplateVO } from "@/api/coupon";
 
 const list = ref<AdminMemberVO[]>([]);
 const loading = ref(false);
+const router = useRouter();
 const nickname = ref("");
 const memberNo = ref("");
 const phone = ref("");
@@ -139,6 +158,10 @@ async function openDetail(row: AdminMemberVO) {
   const { data } = await fetchAdminMemberDetail(row.memberNo);
   detail.value = data.data;
   visible.value = true;
+}
+
+function openLogs(row: AdminMemberVO) {
+  router.push({ name: "balance-logs", query: { memberNo: row.memberNo } });
 }
 
 async function openIssue(row: AdminMemberVO) {

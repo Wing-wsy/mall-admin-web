@@ -107,6 +107,14 @@
           <el-descriptions-item v-if="detail.settleStatus" label="卖家入账">
             ¥{{ Number(detail.sellerIncome || 0).toFixed(2) }}（{{ detail.settleStatusText }}）
           </el-descriptions-item>
+          <el-descriptions-item v-if="detail.shareSettleStatus" label="分享上线">
+            {{ detail.shareUplineMemberNo || "-" }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.shareSettleStatus" label="分享佣金">
+            {{ Number(detail.shareRate || 0) }}% / 差额 ¥{{ Number(detail.shareSpread || 0).toFixed(2) }} / 入账 ¥{{
+              Number(detail.shareIncome || 0).toFixed(2)
+            }}（{{ detail.shareSettleStatusText }}）
+          </el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2" label="优惠券">{{ detail.couponName || "未使用" }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.orderType !== 1 && detail.orderType !== 2 && detail.couponAmount" label="优惠金额">-¥{{ detail.couponAmount }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.memberLevelName" label="会员等级">{{ detail.memberLevelName }}{{ detail.memberDiscount ? `（${detail.memberDiscount}折）` : "" }}</el-descriptions-item>
