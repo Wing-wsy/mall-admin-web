@@ -46,14 +46,15 @@
     <el-dialog v-model="visible" :title="form.id ? '编辑热卖' : '新增热卖'" width="520px">
       <el-form label-width="96px">
         <el-form-item label="关联商品" required>
-          <el-select v-model="form.productId" filterable placeholder="选择商品" style="width: 100%">
-            <el-option
-              v-for="p in products"
-              :key="p.id"
-              :label="`${p.name} (#${p.id})`"
-              :value="p.id"
-            />
-          </el-select>
+          <el-cascader
+            v-model="form.productId"
+            :options="productPickTree"
+            :props="productPickCascaderProps"
+            filterable
+            clearable
+            placeholder="按分类选择商品"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" />
@@ -84,10 +85,17 @@ import {
   updateHotProduct,
   type HotProductVO,
 } from "@/api/hotProduct";
-import { fetchProductList, type ProductVO } from "@/api/product";
+import { CATEGORY_TYPE_PRODUCT, fetchCategoryTree } from "@/api/category";
+import { fetchProductList } from "@/api/product";
+import {
+  buildProductPickTree,
+  firstProductId,
+  productPickCascaderProps,
+  type ProductPickTreeOption,
+} from "@/utils/productPickTree";
 
 const list = ref<HotProductVO[]>([]);
-const products = ref<ProductVO[]>([]);
+const productPickTree = ref<ProductPickTreeOption[]>([]);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -102,9 +110,13 @@ const form = reactive({
 async function load() {
   loading.value = true;
   try {
-    const [hotRes, productRes] = await Promise.all([fetchHotProductList(), fetchProductList()]);
+    const [hotRes, productRes, treeRes] = await Promise.all([
+      fetchHotProductList(),
+      fetchProductList(),
+      fetchCategoryTree(CATEGORY_TYPE_PRODUCT),
+    ]);
     list.value = hotRes.data.data || [];
-    products.value = productRes.data.data || [];
+    productPickTree.value = buildProductPickTree(treeRes.data.data || [], productRes.data.data || []);
   } finally {
     loading.value = false;
   }
@@ -112,7 +124,7 @@ async function load() {
 
 function resetForm() {
   form.id = 0;
-  form.productId = products.value[0]?.id;
+  form.productId = firstProductId(productPickTree.value);
   form.sort = 0;
   form.status = 1;
 }

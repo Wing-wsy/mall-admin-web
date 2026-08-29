@@ -75,6 +75,21 @@
         <el-form-item label="名称" required>
           <el-input v-model="form.name" maxlength="64" />
         </el-form-item>
+        <el-form-item v-if="form.parentId" label="图标">
+          <div class="upload-row">
+            <el-upload :show-file-list="false" :http-request="onUploadIcon" accept="image/*">
+              <el-button>上传图标</el-button>
+            </el-upload>
+            <el-button v-if="form.iconUrl" link type="danger" @click="form.iconUrl = ''">清除</el-button>
+            <el-image
+              v-if="form.iconUrl"
+              :src="form.iconUrl"
+              style="width: 48px; height: 48px"
+              fit="cover"
+            />
+          </div>
+          <div class="tip block">小程序二级及以下分类展示；建议正方形，约 96×96</div>
+        </el-form-item>
         <el-form-item v-if="isFestival && !form.parentId" label="起止时间" required>
           <el-date-picker
             v-model="form.range"
@@ -110,6 +125,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import type { UploadRequestOptions } from "element-plus";
 import {
   CATEGORY_TYPE_FESTIVAL,
   createCategory,
@@ -119,6 +135,7 @@ import {
   updateCategoryStatus,
   type CategoryTreeVO,
 } from "@/api/category";
+import { uploadAdminFile } from "@/api/product";
 
 const MAX_LEVEL = 5;
 const LEVEL_NAMES = ["", "一级", "二级", "三级", "四级", "五级"];
@@ -139,6 +156,7 @@ const form = reactive({
   id: 0,
   parentId: 0,
   name: "",
+  iconUrl: "",
   sort: 0,
   status: 1,
   range: [] as string[],
@@ -181,6 +199,7 @@ function resetForm() {
   form.id = 0;
   form.parentId = 0;
   form.name = "";
+  form.iconUrl = "";
   form.sort = 0;
   form.status = 1;
   form.range = [];
@@ -252,6 +271,7 @@ function openEdit(row: CategoryTreeVO) {
   form.id = row.id;
   form.parentId = row.parentId || 0;
   form.name = row.name;
+  form.iconUrl = row.iconUrl || "";
   form.sort = row.sort ?? 0;
   form.status = row.status;
   parentBoundCount.value = 0;
@@ -266,6 +286,12 @@ function openEdit(row: CategoryTreeVO) {
     parentName.value = "";
   }
   visible.value = true;
+}
+
+async function onUploadIcon(options: UploadRequestOptions) {
+  const { data } = await uploadAdminFile(options.file as File, "category");
+  form.iconUrl = data.data.url;
+  ElMessage.success("上传成功");
 }
 
 async function save() {
@@ -293,6 +319,7 @@ async function save() {
       type: props.type,
       parentId: form.parentId || 0,
       name: form.name.trim(),
+      iconUrl: form.parentId ? form.iconUrl || undefined : undefined,
       sort: form.sort,
       status: form.status,
       startTime: isFestival.value && !form.parentId ? form.range[0] : undefined,
@@ -359,5 +386,14 @@ onMounted(load);
 }
 .muted {
   color: #9ca3af;
+}
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.tip.block {
+  display: block;
+  margin: 8px 0 0;
 }
 </style>
