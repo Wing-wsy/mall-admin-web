@@ -10,6 +10,7 @@ export interface AdminMemberLevelVO {
   privileges?: string[];
   privilegesText?: string;
   supplierMax?: number;
+  productMax?: number;
   commissionRate?: number | string;
   shareCommissionRate?: number | string;
   shareRateMin?: number | string;
@@ -30,6 +31,7 @@ export interface MemberLevelSavePayload {
   status?: number;
   privileges?: string[];
   supplierMax?: number;
+  productMax?: number;
   commissionRate?: number;
   shareCommissionRate?: number;
   shareRateMin?: number;

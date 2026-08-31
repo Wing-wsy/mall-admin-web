@@ -31,6 +31,11 @@
             {{ (row.privileges || []).includes("SUPPLIER") ? row.supplierMax || "-" : "-" }}
           </template>
         </el-table-column>
+        <el-table-column label="商品上限" width="100">
+          <template #default="{ row }">
+            {{ (row.privileges || []).includes("SUPPLIER") ? row.productMax || "-" : "-" }}
+          </template>
+        </el-table-column>
         <el-table-column label="供货抽成" width="110">
           <template #default="{ row }">{{ strip(row.commissionRate) }}%</template>
         </el-table-column>
@@ -135,14 +140,14 @@
         </el-form-item>
         <el-form-item label="折扣" required>
           <el-input-number v-model="levelForm.discount" :min="0.1" :max="9.9" :step="0.1" :precision="1" />
-          <span class="tip">8 表示 8 折</span>
+          <span class="tip">8 表示 8 折，仅自营商品享受会员折扣</span>
         </el-form-item>
         <el-form-item label="优惠叠加" required>
           <el-radio-group v-model="levelForm.couponStackMode">
             <el-radio value="STACK">可与优惠券叠加</el-radio>
             <el-radio value="MUTEX">与优惠券二选一</el-radio>
           </el-radio-group>
-          <div class="tip block">叠加：先会员折再按折后价用券。二选一：选券则取消会员折，券按原价计算。</div>
+          <div class="tip block">仅自营商品参与会员折。叠加：先会员折再按折后价用券。二选一：选券则取消会员折，券按原价计算。供应商商品全员原价，可单独用券。</div>
         </el-form-item>
         <el-form-item label="特权功能">
           <el-checkbox-group v-model="levelForm.privileges">
@@ -156,6 +161,10 @@
           <el-form-item label="供应商上限" required>
             <el-input-number v-model="levelForm.supplierMax" :min="1" :max="99" />
             <span class="tip">待审批+已通过计入上限</span>
+          </el-form-item>
+          <el-form-item label="商品上限" required>
+            <el-input-number v-model="levelForm.productMax" :min="1" :max="999" />
+            <span class="tip">未删除且非驳回计入，按会员名下供应商汇总</span>
           </el-form-item>
           <el-form-item label="供货抽成">
             <el-input-number v-model="levelForm.commissionRate" :min="0" :max="100" :step="0.1" :precision="2" />
@@ -347,6 +356,7 @@ const levelForm = reactive({
   couponStackMode: "STACK" as "STACK" | "MUTEX",
   privileges: [] as string[],
   supplierMax: 3,
+  productMax: 10,
   commissionRate: 0,
   shareCommissionRate: 20,
   shareRateMin: 120,
@@ -455,6 +465,7 @@ function openCreate() {
   levelForm.couponStackMode = "STACK";
   levelForm.privileges = [];
   levelForm.supplierMax = 3;
+  levelForm.productMax = 10;
   levelForm.commissionRate = 0;
   levelForm.shareCommissionRate = 20;
   levelForm.shareRateMin = 120;
@@ -472,6 +483,7 @@ function openEdit(row: AdminMemberLevelVO) {
   levelForm.couponStackMode = row.couponStackMode;
   levelForm.privileges = [...(row.privileges || [])];
   levelForm.supplierMax = row.supplierMax || 3;
+  levelForm.productMax = row.productMax || 10;
   levelForm.commissionRate = Number(row.commissionRate ?? 0);
   levelForm.shareCommissionRate = Number(row.shareCommissionRate ?? 20);
   levelForm.shareRateMin = Number(row.shareRateMin || 120);
@@ -500,6 +512,7 @@ async function saveLevel() {
       couponStackMode: levelForm.couponStackMode,
       privileges: levelForm.privileges,
       supplierMax: levelForm.supplierMax,
+      productMax: levelForm.productMax,
       commissionRate: levelForm.commissionRate,
       shareCommissionRate: levelForm.shareCommissionRate,
       shareRateMin: levelForm.shareRateMin,

@@ -25,6 +25,18 @@
             placeholder="展示在首页搜索栏下方，留空则不显示"
           />
         </el-form-item>
+        <el-form-item label="兑换券">
+          <el-switch v-model="contact.voucherEnabled" />
+          <span class="tip">关闭后小程序不展示「礼品兑换」入口，也无法核销；后台仍可管理券种与券码</span>
+        </el-form-item>
+        <el-form-item label="积分">
+          <el-switch v-model="contact.pointsEnabled" />
+          <span class="tip">关闭后小程序不展示积分商城/明细与当前积分，也无法兑换；后台仍可管理积分商品</span>
+        </el-form-item>
+        <el-form-item label="优惠券">
+          <el-switch v-model="contact.couponEnabled" />
+          <span class="tip">关闭后小程序不展示优惠券入口，下单也不可用券；后台仍可管理券模板</span>
+        </el-form-item>
         <el-form-item label="退货联系人">
           <el-input v-model="contact.returnName" maxlength="64" placeholder="退货退款时展示给用户" />
         </el-form-item>
@@ -188,6 +200,9 @@ const contact = reactive({
   selfContact: "",
   selfEmail: "",
   selfAddress: "",
+  voucherEnabled: false,
+  pointsEnabled: false,
+  couponEnabled: false,
 });
 
 function emptyRule(): FreightRuleVO {
@@ -227,6 +242,9 @@ async function loadContact() {
     contact.selfContact = data.data?.selfContact || "";
     contact.selfEmail = data.data?.selfEmail || "";
     contact.selfAddress = data.data?.selfAddress || "";
+    contact.voucherEnabled = !!data.data?.voucherEnabled;
+    contact.pointsEnabled = !!data.data?.pointsEnabled;
+    contact.couponEnabled = !!data.data?.couponEnabled;
   } finally {
     contactLoading.value = false;
   }
@@ -242,6 +260,9 @@ async function saveContact() {
       returnName: contact.returnName.trim(),
       returnPhone: contact.returnPhone.trim(),
       returnAddress: contact.returnAddress.trim(),
+      voucherEnabled: contact.voucherEnabled,
+      pointsEnabled: contact.pointsEnabled,
+      couponEnabled: contact.couponEnabled,
     });
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
@@ -249,6 +270,9 @@ async function saveContact() {
     contact.returnName = data.data?.returnName || "";
     contact.returnPhone = data.data?.returnPhone || "";
     contact.returnAddress = data.data?.returnAddress || "";
+    contact.voucherEnabled = !!data.data?.voucherEnabled;
+    contact.pointsEnabled = !!data.data?.pointsEnabled;
+    contact.couponEnabled = !!data.data?.couponEnabled;
     ElMessage.success("已保存");
   } catch {
     // interceptor already toasted

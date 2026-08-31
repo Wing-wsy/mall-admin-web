@@ -11,6 +11,9 @@ export interface ShopConfigVO {
   selfContact: string;
   selfEmail: string;
   selfAddress: string;
+  voucherEnabled?: boolean;
+  pointsEnabled?: boolean;
+  couponEnabled?: boolean;
 }
 
 export interface ShopConfigSavePayload {
@@ -24,6 +27,9 @@ export interface ShopConfigSavePayload {
   selfContact?: string;
   selfEmail?: string;
   selfAddress?: string;
+  voucherEnabled?: boolean;
+  pointsEnabled?: boolean;
+  couponEnabled?: boolean;
 }
 
 export interface SelfOperatedVO {

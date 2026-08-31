@@ -1,10 +1,17 @@
 const LOCAL_MINIO = "http://127.0.0.1:9000";
 const BUCKET = "mall";
 
-/** 后台在本机打开，图片走 127.0.0.1，避免换 WiFi 后库里的旧局域网 IP 失效。 */
+/**
+ * 开发：把 view / 局域网 MinIO 地址改到本机 127.0.0.1:9000，方便本地看图。
+ * 生产：不做改写，原样使用接口返回的 URL。
+ */
 export function resolveMediaUrl(url: string): string {
   const raw = (url || "").trim();
   if (!raw) {
+    return raw;
+  }
+
+  if (!import.meta.env.DEV) {
     return raw;
   }
 
