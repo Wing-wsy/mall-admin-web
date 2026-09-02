@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface RoleVO {
   id: number;
@@ -24,10 +25,12 @@ export interface RoleQuery {
   code?: string;
   name?: string;
   status?: number;
+  pageNum?: number;
+  pageSize?: number;
 }
 
 export function fetchRoleList(params?: RoleQuery) {
-  return request.get<ApiResult<RoleVO[]>>("/api/admin/system/role/list", { params });
+  return request.get<ApiResult<PageResult<RoleVO>>>("/api/admin/system/role/list", { params });
 }
 
 export function createRole(data: {

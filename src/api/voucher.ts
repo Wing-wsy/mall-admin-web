@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminVoucherTemplateVO {
   id: number;
@@ -58,8 +58,8 @@ export interface VoucherGenerateVO {
   codes: GeneratedVoucherCode[];
 }
 
-export function fetchVoucherTemplates() {
-  return request.get<ApiResult<AdminVoucherTemplateVO[]>>("/api/admin/voucher/template/list");
+export function fetchVoucherTemplates(params?: { pageNum?: number; pageSize?: number }) {
+  return request.get<ApiResult<PageResult<AdminVoucherTemplateVO>>>("/api/admin/voucher/template/list", { params });
 }
 
 export function createVoucherTemplate(data: VoucherTemplateSavePayload) {
@@ -88,8 +88,10 @@ export function fetchVoucherCodes(params?: {
   status?: number;
   memberNo?: string;
   code?: string;
+  pageNum?: number;
+  pageSize?: number;
 }) {
-  return request.get<ApiResult<AdminVoucherCodeVO[]>>("/api/admin/voucher/code/list", { params });
+  return request.get<ApiResult<PageResult<AdminVoucherCodeVO>>>("/api/admin/voucher/code/list", { params });
 }
 
 export function voidVoucherCode(id: number) {

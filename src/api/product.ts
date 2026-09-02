@@ -71,10 +71,17 @@ export interface ProductQuery {
   festivalId?: number;
   status?: number;
   supplierId?: number;
+  pageNum?: number;
+  pageSize?: number;
+}
+
+export interface ProductPageVO {
+  total: number;
+  records: ProductVO[];
 }
 
 export function fetchProductList(params?: ProductQuery) {
-  return request.get<ApiResult<ProductVO[]>>("/api/admin/product/list", { params });
+  return request.get<ApiResult<ProductPageVO>>("/api/admin/product/list", { params });
 }
 
 export function fetchProductDetail(id: number) {

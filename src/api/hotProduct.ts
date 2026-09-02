@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface HotProductVO {
   id: number;
@@ -18,8 +19,13 @@ export interface HotProductSavePayload {
   status?: number;
 }
 
-export function fetchHotProductList() {
-  return request.get<ApiResult<HotProductVO[]>>("/api/admin/hot-product/list");
+export interface HotProductQuery {
+  pageNum?: number;
+  pageSize?: number;
+}
+
+export function fetchHotProductList(params?: HotProductQuery) {
+  return request.get<ApiResult<PageResult<HotProductVO>>>("/api/admin/hot-product/list", { params });
 }
 
 export function createHotProduct(data: HotProductSavePayload) {

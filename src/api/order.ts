@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminOrderItemVO {
   id: number;
@@ -76,8 +76,10 @@ export function fetchAdminOrderList(params?: {
   orderType?: number;
   orderNo?: string;
   supplierId?: number;
+  pageNum?: number;
+  pageSize?: number;
 }) {
-  return request.get<ApiResult<AdminOrderVO[]>>("/api/admin/order/list", { params });
+  return request.get<ApiResult<PageResult<AdminOrderVO>>>("/api/admin/order/list", { params });
 }
 
 export function fetchAdminOrderDetail(id: number) {

@@ -1,21 +1,21 @@
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="query.name" placeholder="供应商名称" clearable style="width: 180px" @keyup.enter="load" />
+      <el-input v-model="query.name" placeholder="供应商名称" clearable style="width: 180px" @keyup.enter="search" />
       <el-input
         v-if="!userStore.isSupplier"
         v-model="query.phone"
         placeholder="会员手机号"
         clearable
         style="width: 160px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-select v-model="query.status" clearable placeholder="状态" style="width: 120px">
         <el-option :value="0" label="待审批" />
         <el-option :value="1" label="已通过" />
         <el-option :value="2" label="已拒绝" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button v-if="!userStore.isSupplier" type="primary" @click="openCreate">新建</el-button>
       <el-button v-if="!userStore.isSupplier" @click="openSetting">设置</el-button>
     </div>
@@ -47,6 +47,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="formVisible" :title="form.id ? '修改供应商' : '新建供应商'" width="520px">
       <el-form label-width="108px">
@@ -108,6 +121,9 @@ const userStore = useUserStore();
 const loading = ref(false);
 const saving = ref(false);
 const list = ref<AdminSupplierVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const formVisible = ref(false);
 const settingVisible = ref(false);
 const query = reactive({
@@ -134,11 +150,19 @@ async function load() {
       name: query.name || undefined,
       phone: query.phone || undefined,
       status: query.status,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function openCreate() {
@@ -255,5 +279,10 @@ onMounted(load);
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

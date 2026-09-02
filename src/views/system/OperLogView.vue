@@ -78,7 +78,7 @@
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
         :total="total"
-        :page-sizes="[20, 50, 100]"
+        :page-sizes="[10, 20, 50, 100]"
         layout="total, sizes, prev, pager, next"
         background
         @current-change="load"
@@ -122,7 +122,7 @@ const loading = ref(false);
 const list = ref<OperLogVO[]>([]);
 const total = ref(0);
 const pageNum = ref(1);
-const pageSize = ref(20);
+const pageSize = ref(10);
 const visible = ref(false);
 const current = ref<OperLogVO | null>(null);
 const dateRange = ref<[string, string] | undefined>();

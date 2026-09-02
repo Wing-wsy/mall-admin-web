@@ -1,7 +1,7 @@
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="load" />
+      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-select v-model="status" clearable placeholder="状态" style="width: 140px">
         <el-option :value="10" label="待付款" />
         <el-option :value="20" label="待发货" />
@@ -26,7 +26,7 @@
         <el-option label="自营" :value="0" />
         <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
@@ -77,6 +77,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" title="订单详情" width="720px">
       <template v-if="detail">
@@ -238,6 +251,9 @@ const router = useRouter();
 const userStore = useUserStore();
 
 const list = ref<AdminOrderVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
 const status = ref<number | undefined>();
@@ -294,11 +310,19 @@ async function load() {
       orderType: orderType.value === "" ? undefined : Number(orderType.value),
       orderNo: orderNo.value || undefined,
       supplierId: userStore.isSupplier ? undefined : supplierId.value,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 async function openDetail(row: AdminOrderVO) {
@@ -448,6 +472,11 @@ onMounted(async () => {
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .hint {
   margin: 0 0 16px;

@@ -123,11 +123,14 @@ async function load() {
   try {
     const [bannerRes, productRes, treeRes] = await Promise.all([
       fetchBannerList(),
-      fetchProductList(),
+      fetchProductList({ pageSize: 500 }),
       fetchCategoryTree(CATEGORY_TYPE_PRODUCT),
     ]);
     list.value = bannerRes.data.data || [];
-    productPickTree.value = buildProductPickTree(treeRes.data.data || [], productRes.data.data || []);
+    productPickTree.value = buildProductPickTree(
+      treeRes.data.data || [],
+      productRes.data.data?.records || [],
+    );
   } finally {
     loading.value = false;
   }

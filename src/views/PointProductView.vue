@@ -47,6 +47,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" :title="form.id ? '编辑兑换商品' : '新增兑换商品'" width="520px">
       <el-alert
         class="form-alert"
@@ -107,6 +120,9 @@ import {
 import { fetchProductList, type ProductVO } from "@/api/product";
 
 const list = ref<AdminPointProductVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const products = ref<ProductVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
@@ -133,15 +149,28 @@ function baseSpecOf(productId?: number) {
   return sku?.specName || "";
 }
 
+async function loadProducts() {
+  const { data } = await fetchProductList({ pageSize: 500 });
+  products.value = data.data?.records || [];
+}
+
 async function load() {
   loading.value = true;
   try {
-    const [pointRes, productRes] = await Promise.all([fetchPointProductList(), fetchProductList()]);
-    list.value = pointRes.data.data || [];
-    products.value = productRes.data.data || [];
+    const { data } = await fetchPointProductList({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    });
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetForm() {
@@ -211,7 +240,10 @@ async function toggleStatus(row: AdminPointProductVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await loadProducts();
+  await load();
+});
 </script>
 
 <style scoped>
@@ -237,5 +269,10 @@ onMounted(load);
   margin-left: 8px;
   color: #9ca3af;
   font-size: 12px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

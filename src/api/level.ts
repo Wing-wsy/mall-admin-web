@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminMemberLevelVO {
   id: number;
@@ -47,8 +47,8 @@ export interface AdminMemberLevelPhoneVO {
   createTime?: string;
 }
 
-export function fetchMemberLevels() {
-  return request.get<ApiResult<AdminMemberLevelVO[]>>("/api/admin/member-level/list");
+export function fetchMemberLevels(params?: { pageNum?: number; pageSize?: number }) {
+  return request.get<ApiResult<PageResult<AdminMemberLevelVO>>>("/api/admin/member-level/list", { params });
 }
 
 export function createMemberLevel(data: MemberLevelSavePayload) {
@@ -67,8 +67,13 @@ export function deleteMemberLevel(id: number) {
   return request.delete<ApiResult<null>>(`/api/admin/member-level/${id}`);
 }
 
-export function fetchMemberLevelPhones(params?: { phone?: string; levelId?: number }) {
-  return request.get<ApiResult<AdminMemberLevelPhoneVO[]>>("/api/admin/member-level/phone/list", { params });
+export function fetchMemberLevelPhones(params?: {
+  phone?: string;
+  levelId?: number;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request.get<ApiResult<PageResult<AdminMemberLevelPhoneVO>>>("/api/admin/member-level/phone/list", { params });
 }
 
 export function createMemberLevelPhone(data: { phone: string; levelId: number }) {
@@ -113,8 +118,14 @@ export interface AdminMemberLevelInviteLogVO {
   createTime?: string;
 }
 
-export function fetchMemberLevelInvites(params?: { levelId?: number }) {
-  return request.get<ApiResult<AdminMemberLevelInviteVO[]>>("/api/admin/member-level/invite/list", { params });
+export function fetchMemberLevelInvites(params?: {
+  levelId?: number;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request.get<ApiResult<PageResult<AdminMemberLevelInviteVO>>>("/api/admin/member-level/invite/list", {
+    params,
+  });
 }
 
 export function createMemberLevelInvite(data: {

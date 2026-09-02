@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface NavEntryVO {
   id: number;
@@ -22,8 +23,13 @@ export interface NavEntrySavePayload {
   status?: number;
 }
 
-export function fetchNavEntryList() {
-  return request.get<ApiResult<NavEntryVO[]>>("/api/admin/nav-entry/list");
+export interface NavEntryQuery {
+  pageNum?: number;
+  pageSize?: number;
+}
+
+export function fetchNavEntryList(params?: NavEntryQuery) {
+  return request.get<ApiResult<PageResult<NavEntryVO>>>("/api/admin/nav-entry/list", { params });
 }
 
 export function createNavEntry(data: NavEntrySavePayload) {

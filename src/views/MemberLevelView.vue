@@ -68,15 +68,27 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="levelPageNum"
+          v-model:page-size="levelPageSize"
+          :total="levelTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadLevels"
+          @size-change="searchLevels"
+        />
+      </div>
     </div>
 
     <div v-show="tab === 'phone'">
       <div class="toolbar">
-        <el-input v-model="phoneQuery" placeholder="手机号" clearable style="width: 180px" @keyup.enter="loadPhones" />
+        <el-input v-model="phoneQuery" placeholder="手机号" clearable style="width: 180px" @keyup.enter="searchPhones" />
         <el-select v-model="phoneLevelId" clearable placeholder="等级" style="width: 160px">
-          <el-option v-for="lv in levels" :key="lv.id" :label="lv.name" :value="lv.id" />
+          <el-option v-for="lv in levelOptions" :key="lv.id" :label="lv.name" :value="lv.id" />
         </el-select>
-        <el-button type="primary" @click="loadPhones">查询</el-button>
+        <el-button type="primary" @click="searchPhones">查询</el-button>
         <el-button type="primary" @click="openPhoneCreate">新增</el-button>
         <el-button @click="openPhoneBatch">批量新增</el-button>
       </div>
@@ -94,14 +106,26 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="phonePageNum"
+          v-model:page-size="phonePageSize"
+          :total="phoneTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadPhones"
+          @size-change="searchPhones"
+        />
+      </div>
     </div>
 
     <div v-show="tab === 'invite'">
       <div class="toolbar">
         <el-select v-model="inviteLevelId" clearable placeholder="等级" style="width: 160px">
-          <el-option v-for="lv in levels" :key="lv.id" :label="lv.name" :value="lv.id" />
+          <el-option v-for="lv in levelOptions" :key="lv.id" :label="lv.name" :value="lv.id" />
         </el-select>
-        <el-button type="primary" @click="loadInvites">查询</el-button>
+        <el-button type="primary" @click="searchInvites">查询</el-button>
         <el-button type="primary" @click="openInviteCreate">生成链接</el-button>
       </div>
       <el-table :data="invites" v-loading="inviteLoading" border stripe>
@@ -131,6 +155,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="invitePageNum"
+          v-model:page-size="invitePageSize"
+          :total="inviteTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadInvites"
+          @size-change="searchInvites"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="levelVisible" :title="levelForm.id ? '编辑等级' : '新增等级'" width="560px">
@@ -216,7 +252,7 @@
         </el-form-item>
         <el-form-item label="等级" required>
           <el-select v-model="phoneForm.levelId" style="width: 100%" placeholder="选择等级">
-            <el-option v-for="lv in levels" :key="lv.id" :label="`${lv.name}（${strip(lv.discount)}折）`" :value="lv.id" />
+            <el-option v-for="lv in levelOptions" :key="lv.id" :label="`${lv.name}（${strip(lv.discount)}折）`" :value="lv.id" />
           </el-select>
         </el-form-item>
       </el-form>
@@ -230,7 +266,7 @@
       <el-form label-width="88px">
         <el-form-item label="等级" required>
           <el-select v-model="batchForm.levelId" style="width: 100%" placeholder="选择等级">
-            <el-option v-for="lv in levels" :key="lv.id" :label="lv.name" :value="lv.id" />
+            <el-option v-for="lv in levelOptions" :key="lv.id" :label="lv.name" :value="lv.id" />
           </el-select>
         </el-form-item>
         <el-form-item label="手机号" required>
@@ -331,6 +367,7 @@ import {
 
 const tab = ref("level");
 const levels = ref<AdminMemberLevelVO[]>([]);
+const levelOptions = ref<AdminMemberLevelVO[]>([]);
 const phones = ref<AdminMemberLevelPhoneVO[]>([]);
 const invites = ref<AdminMemberLevelInviteVO[]>([]);
 const inviteLogs = ref<AdminMemberLevelInviteLogVO[]>([]);
@@ -338,6 +375,15 @@ const levelLoading = ref(false);
 const phoneLoading = ref(false);
 const inviteLoading = ref(false);
 const logLoading = ref(false);
+const levelPageNum = ref(1);
+const levelPageSize = ref(10);
+const levelTotal = ref(0);
+const phonePageNum = ref(1);
+const phonePageSize = ref(10);
+const phoneTotal = ref(0);
+const invitePageNum = ref(1);
+const invitePageSize = ref(10);
+const inviteTotal = ref(0);
 const levelVisible = ref(false);
 const phoneVisible = ref(false);
 const batchVisible = ref(false);
@@ -384,7 +430,7 @@ const inviteForm = reactive({
   remark: "",
 });
 
-const enabledLevels = computed(() => levels.value.filter((lv) => lv.status === 1));
+const enabledLevels = computed(() => levelOptions.value.filter((lv) => lv.status === 1));
 
 function envLabel(value?: string) {
   if (value === "trial") return "体验版";
@@ -434,14 +480,28 @@ function strip(value: number | string | undefined) {
   return n.toString().replace(/\.0+$/, "").replace(/(\.\d*?)0+$/, "$1");
 }
 
+async function loadLevelOptions() {
+  const { data } = await fetchMemberLevels({ pageSize: 500 });
+  levelOptions.value = data.data?.records || [];
+}
+
 async function loadLevels() {
   levelLoading.value = true;
   try {
-    const { data } = await fetchMemberLevels();
-    levels.value = data.data || [];
+    const { data } = await fetchMemberLevels({
+      pageNum: levelPageNum.value,
+      pageSize: levelPageSize.value,
+    });
+    levels.value = data.data?.records || [];
+    levelTotal.value = data.data?.total || 0;
   } finally {
     levelLoading.value = false;
   }
+}
+
+function searchLevels() {
+  levelPageNum.value = 1;
+  loadLevels();
 }
 
 async function loadPhones() {
@@ -450,11 +510,19 @@ async function loadPhones() {
     const { data } = await fetchMemberLevelPhones({
       phone: phoneQuery.value || undefined,
       levelId: phoneLevelId.value,
+      pageNum: phonePageNum.value,
+      pageSize: phonePageSize.value,
     });
-    phones.value = data.data || [];
+    phones.value = data.data?.records || [];
+    phoneTotal.value = data.data?.total || 0;
   } finally {
     phoneLoading.value = false;
   }
+}
+
+function searchPhones() {
+  phonePageNum.value = 1;
+  loadPhones();
 }
 
 function openCreate() {
@@ -528,6 +596,7 @@ async function saveLevel() {
     ElMessage.success("已保存");
     levelVisible.value = false;
     await loadLevels();
+    await loadLevelOptions();
   } finally {
     saving.value = false;
   }
@@ -549,7 +618,7 @@ async function onDeleteLevel(row: AdminMemberLevelVO) {
 function openPhoneCreate() {
   phoneForm.id = 0;
   phoneForm.phone = "";
-  phoneForm.levelId = levels.value[0]?.id;
+  phoneForm.levelId = levelOptions.value[0]?.id;
   phoneVisible.value = true;
 }
 
@@ -577,6 +646,7 @@ async function savePhone() {
     phoneVisible.value = false;
     await loadPhones();
     await loadLevels();
+    await loadLevelOptions();
   } finally {
     saving.value = false;
   }
@@ -584,7 +654,7 @@ async function savePhone() {
 
 function openPhoneBatch() {
   batchForm.phones = "";
-  batchForm.levelId = levels.value[0]?.id;
+  batchForm.levelId = levelOptions.value[0]?.id;
   batchVisible.value = true;
 }
 
@@ -603,6 +673,7 @@ async function saveBatch() {
     batchVisible.value = false;
     await loadPhones();
     await loadLevels();
+    await loadLevelOptions();
   } finally {
     saving.value = false;
   }
@@ -621,11 +692,19 @@ async function loadInvites() {
   try {
     const { data } = await fetchMemberLevelInvites({
       levelId: inviteLevelId.value,
+      pageNum: invitePageNum.value,
+      pageSize: invitePageSize.value,
     });
-    invites.value = data.data || [];
+    invites.value = data.data?.records || [];
+    inviteTotal.value = data.data?.total || 0;
   } finally {
     inviteLoading.value = false;
   }
+}
+
+function searchInvites() {
+  invitePageNum.value = 1;
+  loadInvites();
 }
 
 function openInviteCreate() {
@@ -686,6 +765,7 @@ async function openInviteLogs(row: AdminMemberLevelInviteVO) {
 }
 
 onMounted(() => {
+  loadLevelOptions();
   loadLevels();
   loadPhones();
   loadInvites();
@@ -739,5 +819,10 @@ onMounted(() => {
 .range-sep {
   margin: 0 8px;
   color: #6b7280;
+}
+.pager {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

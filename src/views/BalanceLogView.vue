@@ -1,15 +1,15 @@
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="memberNo" placeholder="用户ID" clearable style="width: 200px" @keyup.enter="load" />
-      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="load" />
+      <el-input v-model="memberNo" placeholder="用户ID" clearable style="width: 200px" @keyup.enter="search" />
+      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-select v-model="bizType" clearable placeholder="流水类型" style="width: 180px">
         <el-option value="SETTLE" label="订单完成入账" />
         <el-option value="CLAWBACK" label="售后退回" />
         <el-option value="SHARE_SETTLE" label="分享佣金入账" />
         <el-option value="SHARE_CLAWBACK" label="分享佣金冲回" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
     </div>
 
     <el-descriptions v-if="account" :column="4" border class="summary">
@@ -49,6 +49,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" title="订单详情" width="720px">
       <template v-if="detail">
         <el-descriptions :column="2" border>
@@ -74,6 +87,9 @@ const memberNo = ref("");
 const orderNo = ref("");
 const bizType = ref<string | undefined>();
 const loading = ref(false);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const account = ref<AdminBalanceAccountVO | null>(null);
 const list = ref<AdminBalanceLogVO[]>([]);
 const visible = ref(false);
@@ -100,12 +116,20 @@ async function load() {
       memberNo: memberNo.value.trim(),
       orderNo: orderNo.value.trim() || undefined,
       bizType: bizType.value || undefined,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
     account.value = data.data || null;
-    list.value = data.data?.list || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 async function openDetail(row: AdminBalanceLogVO) {
@@ -121,7 +145,7 @@ onMounted(() => {
   const fromQuery = String(route.query.memberNo || "").trim();
   if (fromQuery) {
     memberNo.value = fromQuery;
-    load();
+    search();
   }
 });
 
@@ -130,7 +154,7 @@ watch(
   (no) => {
     if (no && no !== memberNo.value) {
       memberNo.value = no;
-      load();
+      search();
     }
   }
 );
@@ -142,6 +166,11 @@ watch(
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .summary {
   margin-bottom: 16px;

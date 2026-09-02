@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface OperLogVO {
   id: number;
@@ -21,11 +22,6 @@ export interface OperLogVO {
   createTime?: string;
 }
 
-export interface OperLogPageVO {
-  total: number;
-  records: OperLogVO[];
-}
-
 export interface OperLogQuery {
   username?: string;
   module?: string;
@@ -39,5 +35,5 @@ export interface OperLogQuery {
 }
 
 export function fetchOperLogList(params?: OperLogQuery) {
-  return request.get<ApiResult<OperLogPageVO>>("/api/admin/system/oper-log/list", { params });
+  return request.get<ApiResult<PageResult<OperLogVO>>>("/api/admin/system/oper-log/list", { params });
 }

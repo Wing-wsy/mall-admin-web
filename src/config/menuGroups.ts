@@ -4,8 +4,8 @@ export const MENU_GROUPS: { code: string; name: string; childCodes: string[] }[]
   { code: "goods", name: "商品", childCodes: ["product", "category", "festival", "spec"] },
   { code: "marketing", name: "营销", childCodes: ["banner", "nav", "hot", "iconset", "theme", "coupon", "point", "voucher"] },
   { code: "trade", name: "交易", childCodes: ["order", "aftersale", "commission", "balance"] },
-  { code: "ums", name: "用户", childCodes: ["member", "level", "supplier", "system:tenant"] },
-  { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog"] },
+  { code: "ums", name: "用户", childCodes: ["member", "level", "blacklist", "supplier", "system:tenant"] },
+  { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog", "system:cache"] },
 ];
 
 const MENU_TITLES: Record<string, string> = {
@@ -32,6 +32,7 @@ const MENU_TITLES: Record<string, string> = {
   ums: "用户",
   member: "用户管理",
   level: "会员等级",
+  blacklist: "手机黑名单",
   supplier: "供应商",
   "system:tenant": "租户管理",
   system: "系统",
@@ -39,6 +40,7 @@ const MENU_TITLES: Record<string, string> = {
   "system:user": "账号管理",
   "system:role": "角色管理",
   "system:operlog": "操作日志",
+  "system:cache": "缓存管理",
 };
 
 function titled(node: MenuNode): MenuNode {

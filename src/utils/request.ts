@@ -8,6 +8,11 @@ export interface ApiResult<T = unknown> {
   data: T;
 }
 
+export interface PageResult<T> {
+  total: number;
+  records: T[];
+}
+
 declare module "axios" {
   export interface AxiosRequestConfig {
     /** 登录等接口不携带旧 token */

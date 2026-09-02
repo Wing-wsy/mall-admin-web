@@ -42,6 +42,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" :title="form.id ? '编辑导航' : '新增导航'" width="560px">
       <el-form label-width="96px">
         <el-form-item label="名称" required>
@@ -146,7 +159,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onActivated, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
@@ -163,6 +176,7 @@ import {
   type CategoryTreeVO,
 } from "@/api/category";
 import { fetchProductList, uploadAdminFile, type ProductVO } from "@/api/product";
+import { asPage } from "@/utils/page";
 
 interface TreeOption {
   value: number;
@@ -190,6 +204,9 @@ const categoryCascaderProps = {
 } as const;
 
 const list = ref<NavEntryVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const navSlots = computed(() => {
   const seen = new Set<string>();
   const slots: { key: string; label: string }[] = [];
@@ -244,11 +261,11 @@ function toSelectTree(nodes: CategoryTreeVO[], parentDisabled = false): TreeOpti
 
 async function loadOptions() {
   const [productRes, treeRes, festivalRes] = await Promise.all([
-    fetchProductList(),
+    fetchProductList({ pageSize: 500 }),
     fetchCategoryTree(CATEGORY_TYPE_PRODUCT),
     fetchCategoryTree(CATEGORY_TYPE_FESTIVAL),
   ]);
-  products.value = productRes.data.data || [];
+  products.value = asPage<ProductVO>(productRes.data?.data).records;
   productTree.value = toSelectTree(treeRes.data.data || []);
   festivalTree.value = toSelectTree(festivalRes.data.data || []);
 }
@@ -256,11 +273,23 @@ async function loadOptions() {
 async function load() {
   loading.value = true;
   try {
-    const { data } = await fetchNavEntryList();
-    list.value = data.data || [];
+    const res = await fetchNavEntryList({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    });
+    // Compatible with ApiResult<PageResult> and accidental unwrapped payloads.
+    const payload = res.data?.data ?? res.data;
+    const page = asPage<NavEntryVO>(payload);
+    list.value = page.records;
+    total.value = page.total;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetForm() {
@@ -387,6 +416,7 @@ async function onDelete(row: NavEntryVO) {
 }
 
 onMounted(load);
+onActivated(load);
 </script>
 
 <style scoped>
@@ -419,5 +449,10 @@ onMounted(load);
 .link-label {
   margin-left: 8px;
   color: #6b7280;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

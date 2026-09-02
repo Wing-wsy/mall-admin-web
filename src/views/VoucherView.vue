@@ -45,22 +45,34 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="tplPageNum"
+          v-model:page-size="tplPageSize"
+          :total="tplTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadTemplates"
+          @size-change="searchTemplates"
+        />
+      </div>
     </div>
 
     <div v-show="tab === 'code'">
       <div class="toolbar">
         <el-select v-model="codeTemplateId" clearable filterable placeholder="券种" style="width: 180px">
-          <el-option v-for="t in templates" :key="t.id" :label="t.name" :value="t.id" />
+          <el-option v-for="t in templateOptions" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
-        <el-input v-model="batchNo" placeholder="批次号" clearable style="width: 180px" @keyup.enter="loadCodes" />
-        <el-input v-model="fullCode" placeholder="完整验证码查询" clearable style="width: 180px" @keyup.enter="loadCodes" />
-        <el-input v-model="codeMemberNo" placeholder="用户ID" clearable style="width: 160px" @keyup.enter="loadCodes" />
+        <el-input v-model="batchNo" placeholder="批次号" clearable style="width: 180px" @keyup.enter="searchCodes" />
+        <el-input v-model="fullCode" placeholder="完整验证码查询" clearable style="width: 180px" @keyup.enter="searchCodes" />
+        <el-input v-model="codeMemberNo" placeholder="用户ID" clearable style="width: 160px" @keyup.enter="searchCodes" />
         <el-select v-model="codeStatus" clearable placeholder="状态" style="width: 120px">
           <el-option :value="0" label="未使用" />
           <el-option :value="1" label="已核销" />
           <el-option :value="2" label="已作废" />
         </el-select>
-        <el-button type="primary" @click="loadCodes">查询</el-button>
+        <el-button type="primary" @click="searchCodes">查询</el-button>
         <el-button @click="openVoidBatch">按批次作废</el-button>
       </div>
       <el-table :data="codes" v-loading="codeLoading" border stripe>
@@ -85,6 +97,18 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="codePageNum"
+          v-model:page-size="codePageSize"
+          :total="codeTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadCodes"
+          @size-change="searchCodes"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="tplVisible" :title="form.id ? '编辑券种' : '新增券种'" width="560px">
@@ -172,10 +196,17 @@ import { fetchProductList, type ProductSkuVO, type ProductVO } from "@/api/produ
 
 const tab = ref("tpl");
 const templates = ref<AdminVoucherTemplateVO[]>([]);
+const templateOptions = ref<AdminVoucherTemplateVO[]>([]);
 const codes = ref<AdminVoucherCodeVO[]>([]);
 const products = ref<ProductVO[]>([]);
 const tplLoading = ref(false);
 const codeLoading = ref(false);
+const tplPageNum = ref(1);
+const tplPageSize = ref(10);
+const tplTotal = ref(0);
+const codePageNum = ref(1);
+const codePageSize = ref(10);
+const codeTotal = ref(0);
 const tplVisible = ref(false);
 const saving = ref(false);
 const genVisible = ref(false);
@@ -224,15 +255,32 @@ function formatRange(start?: string | null, end?: string | null) {
   return `${a} ~ ${b}`;
 }
 
+async function loadTemplateOptions() {
+  const { data } = await fetchVoucherTemplates({ pageSize: 500 });
+  templateOptions.value = data.data?.records || [];
+}
+
 async function loadTemplates() {
   tplLoading.value = true;
   try {
-    const [tplRes, productRes] = await Promise.all([fetchVoucherTemplates(), fetchProductList()]);
-    templates.value = tplRes.data.data || [];
-    products.value = productRes.data.data || [];
+    const [tplRes, productRes] = await Promise.all([
+      fetchVoucherTemplates({
+        pageNum: tplPageNum.value,
+        pageSize: tplPageSize.value,
+      }),
+      fetchProductList({ pageSize: 500 }),
+    ]);
+    templates.value = tplRes.data.data?.records || [];
+    tplTotal.value = tplRes.data.data?.total || 0;
+    products.value = productRes.data.data?.records || [];
   } finally {
     tplLoading.value = false;
   }
+}
+
+function searchTemplates() {
+  tplPageNum.value = 1;
+  loadTemplates();
 }
 
 async function loadCodes() {
@@ -244,11 +292,19 @@ async function loadCodes() {
       status: codeStatus.value,
       memberNo: codeMemberNo.value || undefined,
       code: fullCode.value || undefined,
+      pageNum: codePageNum.value,
+      pageSize: codePageSize.value,
     });
-    codes.value = data.data || [];
+    codes.value = data.data?.records || [];
+    codeTotal.value = data.data?.total || 0;
   } finally {
     codeLoading.value = false;
   }
+}
+
+function searchCodes() {
+  codePageNum.value = 1;
+  loadCodes();
 }
 
 function onProductChange() {
@@ -311,6 +367,7 @@ async function saveTemplate() {
     ElMessage.success("已保存");
     tplVisible.value = false;
     await loadTemplates();
+    await loadTemplateOptions();
   } finally {
     saving.value = false;
   }
@@ -321,6 +378,7 @@ async function toggleStatus(row: AdminVoucherTemplateVO) {
   await updateVoucherTemplateStatus(row.id, next);
   ElMessage.success(next === 1 ? "已启用" : "已停用");
   await loadTemplates();
+  await loadTemplateOptions();
 }
 
 async function onDelete(row: AdminVoucherTemplateVO) {
@@ -350,6 +408,7 @@ async function submitGenerate() {
     }
     genVisible.value = false;
     await loadTemplates();
+    await loadTemplateOptions();
   } finally {
     generating.value = false;
   }
@@ -388,7 +447,10 @@ async function openVoidBatch() {
   await loadTemplates();
 }
 
-onMounted(loadTemplates);
+onMounted(() => {
+  loadTemplateOptions();
+  loadTemplates();
+});
 </script>
 
 <style scoped>
@@ -405,5 +467,10 @@ onMounted(loadTemplates);
 }
 .warn {
   color: #b45309;
+}
+.pager {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

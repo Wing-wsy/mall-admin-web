@@ -209,8 +209,8 @@ async function load() {
     list.value = setRes.data || [];
     slots.value = slotRes.data || [];
     try {
-      const { data: navRes } = await fetchNavEntryList();
-      navList.value = navRes.data || [];
+      const { data: navRes } = await fetchNavEntryList({ pageSize: 500 });
+      navList.value = navRes.data?.records || [];
     } catch {
       navList.value = [];
     }

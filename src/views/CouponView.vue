@@ -39,19 +39,31 @@
           </template>
         </el-table-column>
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="tplPageNum"
+          v-model:page-size="tplPageSize"
+          :total="tplTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadTemplates"
+          @size-change="searchTemplates"
+        />
+      </div>
     </div>
 
     <div v-show="tab === 'log'">
       <div class="toolbar">
-        <el-input v-model="couponNo" placeholder="券编号" clearable style="width: 180px" @keyup.enter="loadRecords" />
-        <el-input v-model="recordMemberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="loadRecords" />
+        <el-input v-model="couponNo" placeholder="券编号" clearable style="width: 180px" @keyup.enter="searchRecords" />
+        <el-input v-model="recordMemberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="searchRecords" />
         <el-select v-model="recordStatus" clearable placeholder="状态" style="width: 120px">
           <el-option :value="0" label="未使用" />
           <el-option :value="1" label="已占用" />
           <el-option :value="2" label="已使用" />
           <el-option :value="3" label="已过期" />
         </el-select>
-        <el-button type="primary" @click="loadRecords">查询</el-button>
+        <el-button type="primary" @click="searchRecords">查询</el-button>
       </div>
       <el-table :data="records" v-loading="logLoading" border stripe>
         <el-table-column prop="couponNo" label="券编号" min-width="140" />
@@ -68,6 +80,18 @@
         <el-table-column prop="expireTime" label="过期时间" min-width="170" />
         <el-table-column prop="createTime" label="发放时间" min-width="170" />
       </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="logPageNum"
+          v-model:page-size="logPageSize"
+          :total="logTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadRecords"
+          @size-change="searchRecords"
+        />
+      </div>
     </div>
 
     <el-dialog v-model="tplVisible" :title="form.id ? '编辑券模板' : '新增券模板'" width="560px">
@@ -130,7 +154,7 @@
         <el-form-item label="券模板" required>
           <el-select v-model="issueTemplateId" filterable style="width: 100%" placeholder="选择启用中的模板">
             <el-option
-              v-for="t in enabledTemplates"
+              v-for="t in enabledTemplateOptions"
               :key="t.id"
               :label="`${t.name}（${t.benefitText}）`"
               :value="t.id"
@@ -170,9 +194,16 @@ import {
 
 const tab = ref("tpl");
 const templates = ref<AdminCouponTemplateVO[]>([]);
+const templateOptions = ref<AdminCouponTemplateVO[]>([]);
 const records = ref<AdminCouponVO[]>([]);
 const tplLoading = ref(false);
 const logLoading = ref(false);
+const tplPageNum = ref(1);
+const tplPageSize = ref(10);
+const tplTotal = ref(0);
+const logPageNum = ref(1);
+const logPageSize = ref(10);
+const logTotal = ref(0);
 const tplVisible = ref(false);
 const saving = ref(false);
 const issueVisible = ref(false);
@@ -195,7 +226,7 @@ const form = reactive({
   status: 1,
 });
 
-const enabledTemplates = computed(() => templates.value.filter((t) => t.status === 1));
+const enabledTemplateOptions = computed(() => templateOptions.value.filter((t) => t.status === 1));
 
 function recordStatusType(status: number) {
   if (status === 0) return "success";
@@ -204,14 +235,28 @@ function recordStatusType(status: number) {
   return "info";
 }
 
+async function loadTemplateOptions() {
+  const { data } = await fetchCouponTemplates({ pageSize: 500 });
+  templateOptions.value = data.data?.records || [];
+}
+
 async function loadTemplates() {
   tplLoading.value = true;
   try {
-    const { data } = await fetchCouponTemplates();
-    templates.value = data.data || [];
+    const { data } = await fetchCouponTemplates({
+      pageNum: tplPageNum.value,
+      pageSize: tplPageSize.value,
+    });
+    templates.value = data.data?.records || [];
+    tplTotal.value = data.data?.total || 0;
   } finally {
     tplLoading.value = false;
   }
+}
+
+function searchTemplates() {
+  tplPageNum.value = 1;
+  loadTemplates();
 }
 
 async function loadRecords() {
@@ -221,11 +266,19 @@ async function loadRecords() {
       couponNo: couponNo.value || undefined,
       memberNo: recordMemberNo.value || undefined,
       status: recordStatus.value,
+      pageNum: logPageNum.value,
+      pageSize: logPageSize.value,
     });
-    records.value = data.data || [];
+    records.value = data.data?.records || [];
+    logTotal.value = data.data?.total || 0;
   } finally {
     logLoading.value = false;
   }
+}
+
+function searchRecords() {
+  logPageNum.value = 1;
+  loadRecords();
 }
 
 function onIssueTypeChange() {
@@ -304,6 +357,7 @@ async function saveTemplate() {
     ElMessage.success("已保存");
     tplVisible.value = false;
     await loadTemplates();
+    await loadTemplateOptions();
   } finally {
     saving.value = false;
   }
@@ -314,6 +368,7 @@ async function toggleStatus(row: AdminCouponTemplateVO) {
   await updateCouponTemplateStatus(row.id, next);
   ElMessage.success(next === 1 ? "已启用" : "已停用");
   await loadTemplates();
+  await loadTemplateOptions();
 }
 
 function openIssue(row?: AdminCouponTemplateVO) {
@@ -341,6 +396,7 @@ async function submitIssue() {
     ElMessage.success(`已发放 ${data.data || nos.length} 张`);
     issueVisible.value = false;
     await loadTemplates();
+    await loadTemplateOptions();
     if (tab.value === "log") {
       await loadRecords();
     }
@@ -350,6 +406,7 @@ async function submitIssue() {
 }
 
 onMounted(() => {
+  loadTemplateOptions();
   loadTemplates();
   loadRecords();
 });
@@ -370,5 +427,10 @@ onMounted(() => {
 .tip.block {
   margin: 8px 0 0;
   line-height: 1.5;
+}
+.pager {
+  margin-top: 16px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

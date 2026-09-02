@@ -26,6 +26,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" :title="form.id ? '编辑规格' : '新增规格'" width="480px">
       <el-form label-width="88px">
         <el-form-item label="名称" required>
@@ -63,6 +76,9 @@ import {
 } from "@/api/spec";
 
 const list = ref<SpecVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -77,11 +93,20 @@ const form = reactive({
 async function load() {
   loading.value = true;
   try {
-    const { data } = await fetchSpecList();
-    list.value = data.data || [];
+    const { data } = await fetchSpecList({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    });
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetForm() {
@@ -156,5 +181,10 @@ onMounted(load);
   margin-left: 8px;
   color: #9ca3af;
   font-size: 12px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminMemberAddressVO {
   id: number;
@@ -29,8 +29,14 @@ export interface AdminMemberVO {
   downlines?: { memberNo?: string; nickname?: string; phone?: string; createTime?: string }[];
 }
 
-export function fetchAdminMemberList(params?: { memberNo?: string; nickname?: string; phone?: string }) {
-  return request.get<ApiResult<AdminMemberVO[]>>("/api/admin/member/list", { params });
+export function fetchAdminMemberList(params?: {
+  memberNo?: string;
+  nickname?: string;
+  phone?: string;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request.get<ApiResult<PageResult<AdminMemberVO>>>("/api/admin/member/list", { params });
 }
 
 export function fetchAdminMemberDetail(memberNo: string) {

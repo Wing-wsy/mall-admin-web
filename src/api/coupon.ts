@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminCouponTemplateVO {
   id: number;
@@ -46,8 +46,8 @@ export interface AdminCouponVO {
   createTime?: string;
 }
 
-export function fetchCouponTemplates() {
-  return request.get<ApiResult<AdminCouponTemplateVO[]>>("/api/admin/coupon/template/list");
+export function fetchCouponTemplates(params?: { pageNum?: number; pageSize?: number }) {
+  return request.get<ApiResult<PageResult<AdminCouponTemplateVO>>>("/api/admin/coupon/template/list", { params });
 }
 
 export function createCouponTemplate(data: CouponTemplateSavePayload) {
@@ -62,8 +62,14 @@ export function updateCouponTemplateStatus(id: number, status: number) {
   return request.put<ApiResult<null>>(`/api/admin/coupon/template/${id}/status`, { status });
 }
 
-export function fetchCouponRecords(params?: { couponNo?: string; memberNo?: string; status?: number }) {
-  return request.get<ApiResult<AdminCouponVO[]>>("/api/admin/coupon/list", { params });
+export function fetchCouponRecords(params?: {
+  couponNo?: string;
+  memberNo?: string;
+  status?: number;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request.get<ApiResult<PageResult<AdminCouponVO>>>("/api/admin/coupon/list", { params });
 }
 
 export function issueCoupons(data: { templateId: number; memberNos: string[] }) {

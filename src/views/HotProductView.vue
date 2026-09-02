@@ -43,6 +43,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" :title="form.id ? '编辑热卖' : '新增热卖'" width="520px">
       <el-form label-width="96px">
         <el-form-item label="关联商品" required>
@@ -95,6 +108,9 @@ import {
 } from "@/utils/productPickTree";
 
 const list = ref<HotProductVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const productPickTree = ref<ProductPickTreeOption[]>([]);
 const loading = ref(false);
 const visible = ref(false);
@@ -107,19 +123,34 @@ const form = reactive({
   status: 1,
 });
 
+async function loadProductOptions() {
+  const [productRes, treeRes] = await Promise.all([
+    fetchProductList({ pageSize: 500 }),
+    fetchCategoryTree(CATEGORY_TYPE_PRODUCT),
+  ]);
+  productPickTree.value = buildProductPickTree(
+    treeRes.data.data || [],
+    productRes.data.data?.records || [],
+  );
+}
+
 async function load() {
   loading.value = true;
   try {
-    const [hotRes, productRes, treeRes] = await Promise.all([
-      fetchHotProductList(),
-      fetchProductList(),
-      fetchCategoryTree(CATEGORY_TYPE_PRODUCT),
-    ]);
-    list.value = hotRes.data.data || [];
-    productPickTree.value = buildProductPickTree(treeRes.data.data || [], productRes.data.data || []);
+    const { data } = await fetchHotProductList({
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
+    });
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetForm() {
@@ -174,7 +205,10 @@ async function onDelete(row: HotProductVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await loadProductOptions();
+  await load();
+});
 </script>
 
 <style scoped>
@@ -195,5 +229,10 @@ onMounted(load);
 }
 .muted {
   color: #9ca3af;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

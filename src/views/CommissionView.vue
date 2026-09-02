@@ -1,24 +1,24 @@
 <template>
   <div>
-    <el-tabs v-model="kind" @tab-change="load">
+    <el-tabs v-model="kind" @tab-change="onKindChange">
       <el-tab-pane label="供货佣金" name="supply" />
       <el-tab-pane label="分享佣金" name="share" />
     </el-tabs>
     <div class="toolbar">
-      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="load" />
+      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-input
         v-model="sellerMemberNo"
         :placeholder="kind === 'share' ? '上线会员ID' : '供货会员ID'"
         clearable
         style="width: 180px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-select v-model="settleStatus" clearable placeholder="结算状态" style="width: 140px">
         <el-option :value="1" label="待入账" />
         <el-option :value="2" label="已入账" />
         <el-option :value="3" label="已冲回" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
@@ -75,6 +75,19 @@
       </el-table-column>
     </el-table>
 
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
+
     <el-dialog v-model="visible" title="订单详情" width="720px">
       <template v-if="detail">
         <el-descriptions :column="2" border>
@@ -127,6 +140,9 @@ import { fetchAdminCommissionList, type AdminCommissionVO } from "@/api/commissi
 import { fetchAdminOrderDetail, type AdminOrderVO } from "@/api/order";
 
 const list = ref<AdminCommissionVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
 const sellerMemberNo = ref("");
@@ -170,11 +186,24 @@ async function load() {
       sellerMemberNo: sellerMemberNo.value || undefined,
       settleStatus: settleStatus.value,
       kind: kind.value,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
+}
+
+function onKindChange() {
+  pageNum.value = 1;
+  load();
 }
 
 async function openDetail(row: AdminCommissionVO) {
@@ -197,6 +226,11 @@ onMounted(load);
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .st-10 {
   --el-tag-bg-color: #fef3c7;

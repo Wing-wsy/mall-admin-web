@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface AdminPointProductVO {
   id: number;
@@ -32,8 +33,13 @@ export interface AdminPointLogVO {
   createTime?: string;
 }
 
-export function fetchPointProductList() {
-  return request.get<ApiResult<AdminPointProductVO[]>>("/api/admin/point/product/list");
+export interface PointProductQuery {
+  pageNum?: number;
+  pageSize?: number;
+}
+
+export function fetchPointProductList(params?: PointProductQuery) {
+  return request.get<ApiResult<PageResult<AdminPointProductVO>>>("/api/admin/point/product/list", { params });
 }
 
 export function createPointProduct(data: PointProductSavePayload) {

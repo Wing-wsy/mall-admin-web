@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface AdminSupplierVO {
   id: number;
@@ -21,8 +22,16 @@ export interface AdminSupplierSettingVO {
   adminLoginUrl?: string;
 }
 
-export function fetchSupplierList(params?: { name?: string; phone?: string; status?: number }) {
-  return request.get<ApiResult<AdminSupplierVO[]>>("/api/admin/supplier/list", { params });
+export interface SupplierQuery {
+  name?: string;
+  phone?: string;
+  status?: number;
+  pageNum?: number;
+  pageSize?: number;
+}
+
+export function fetchSupplierList(params?: SupplierQuery) {
+  return request.get<ApiResult<PageResult<AdminSupplierVO>>>("/api/admin/supplier/list", { params });
 }
 
 export function fetchSupplierOptions() {

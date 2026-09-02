@@ -1,4 +1,5 @@
 import request, { type ApiResult } from "@/utils/request";
+import type { PageResult } from "@/types/page";
 
 export interface AdminUserVO {
   id: number;
@@ -15,10 +16,12 @@ export interface AdminUserQuery {
   nickname?: string;
   roleId?: number;
   status?: number;
+  pageNum?: number;
+  pageSize?: number;
 }
 
 export function fetchAdminUserList(params?: AdminUserQuery) {
-  return request.get<ApiResult<AdminUserVO[]>>("/api/admin/system/user/list", { params });
+  return request.get<ApiResult<PageResult<AdminUserVO>>>("/api/admin/system/user/list", { params });
 }
 
 export function createAdminUser(data: {

@@ -1,10 +1,10 @@
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="memberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="load" />
-      <el-input v-model="nickname" placeholder="昵称" clearable style="width: 180px" @keyup.enter="load" />
-      <el-input v-model="phone" placeholder="手机号" clearable style="width: 180px" @keyup.enter="load" />
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-input v-model="memberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="search" />
+      <el-input v-model="nickname" placeholder="昵称" clearable style="width: 180px" @keyup.enter="search" />
+      <el-input v-model="phone" placeholder="手机号" clearable style="width: 180px" @keyup.enter="search" />
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="reset">重置</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -49,6 +49,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" title="用户详情" width="720px">
       <template v-if="detail">
@@ -120,6 +133,9 @@ import { fetchAdminMemberDetail, fetchAdminMemberList, type AdminMemberVO } from
 import { fetchCouponTemplates, issueCoupons, type AdminCouponTemplateVO } from "@/api/coupon";
 
 const list = ref<AdminMemberVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const router = useRouter();
 const nickname = ref("");
@@ -140,18 +156,26 @@ async function load() {
       memberNo: memberNo.value || undefined,
       nickname: nickname.value || undefined,
       phone: phone.value || undefined,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function reset() {
   memberNo.value = "";
   nickname.value = "";
   phone.value = "";
-  load();
+  search();
 }
 
 async function openDetail(row: AdminMemberVO) {
@@ -167,8 +191,8 @@ function openLogs(row: AdminMemberVO) {
 async function openIssue(row: AdminMemberVO) {
   issueMemberNo.value = row.memberNo;
   issueTemplateId.value = undefined;
-  const { data } = await fetchCouponTemplates();
-  enabledTemplates.value = (data.data || []).filter((t) => t.status === 1);
+  const { data } = await fetchCouponTemplates({ pageSize: 500 });
+  enabledTemplates.value = (data.data?.records || []).filter((t) => t.status === 1);
   issueVisible.value = true;
 }
 
@@ -195,6 +219,11 @@ onMounted(load);
   display: flex;
   gap: 12px;
   margin-bottom: 16px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .addr-title {
   margin: 16px 0 8px;

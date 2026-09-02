@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 import type { AdminOrderItemVO } from "@/api/order";
 
 export interface AdminAfterSaleLogVO {
@@ -55,8 +55,10 @@ export function fetchAfterSaleList(params?: {
   type?: number;
   orderNo?: string;
   afterSaleNo?: string;
+  pageNum?: number;
+  pageSize?: number;
 }) {
-  return request.get<ApiResult<AdminAfterSaleVO[]>>("/api/admin/after-sale/list", { params });
+  return request.get<ApiResult<PageResult<AdminAfterSaleVO>>>("/api/admin/after-sale/list", { params });
 }
 
 export function fetchAfterSaleDetail(id: number) {

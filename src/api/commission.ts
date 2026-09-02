@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface AdminCommissionVO {
   orderId: number;
@@ -34,6 +34,8 @@ export function fetchAdminCommissionList(params?: {
   sellerMemberNo?: string;
   settleStatus?: number;
   kind?: string;
+  pageNum?: number;
+  pageSize?: number;
 }) {
-  return request.get<ApiResult<AdminCommissionVO[]>>("/api/admin/commission/list", { params });
+  return request.get<ApiResult<PageResult<AdminCommissionVO>>>("/api/admin/commission/list", { params });
 }

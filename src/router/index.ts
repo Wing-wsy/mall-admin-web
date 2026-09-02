@@ -82,6 +82,12 @@ const router = createRouter({
           meta: { title: "会员等级", permission: "level" },
         },
         {
+          path: "phone-blacklist",
+          name: "phone-blacklist",
+          component: () => import("@/views/PhoneBlacklistView.vue"),
+          meta: { title: "手机黑名单", permission: "blacklist" },
+        },
+        {
           path: "coupons",
           name: "coupons",
           component: () => import("@/views/CouponView.vue"),
@@ -176,6 +182,12 @@ const router = createRouter({
           name: "system-oper-logs",
           component: () => import("@/views/system/OperLogView.vue"),
           meta: { title: "操作日志", permission: "system:operlog" },
+        },
+        {
+          path: "system/cache",
+          name: "system-cache",
+          component: () => import("@/views/system/CacheView.vue"),
+          meta: { title: "缓存管理", permission: "system:cache" },
         },
         {
           path: "ping",

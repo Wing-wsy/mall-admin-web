@@ -8,20 +8,20 @@
         clearable
         placeholder="编码（模糊）"
         style="width: 160px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-input
         v-model="query.name"
         clearable
         placeholder="名称（模糊）"
         style="width: 160px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-select v-model="query.status" clearable placeholder="状态" style="width: 110px">
         <el-option label="正常" :value="1" />
         <el-option label="停用" :value="0" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -41,6 +41,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑角色' : '新建角色'" width="560px">
       <el-form label-width="90px">
@@ -88,6 +101,9 @@ import {
 
 const list = ref<RoleVO[]>([]);
 const permTree = ref<PermissionNode[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -119,18 +135,26 @@ async function load() {
       code: query.code.trim() || undefined,
       name: query.name.trim() || undefined,
       status: query.status,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetQuery() {
   query.code = "";
   query.name = "";
   query.status = undefined;
-  load();
+  search();
 }
 
 function collectLeafCheckedKeys(nodes: PermissionNode[], selected: Set<number>): number[] {
@@ -215,5 +239,10 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

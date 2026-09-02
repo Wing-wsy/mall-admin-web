@@ -8,7 +8,7 @@
         clearable
         placeholder="商品名称（模糊）"
         style="width: 180px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-cascader
         v-model="query.categoryId"
@@ -45,7 +45,7 @@
         <el-option label="自营" :value="0" />
         <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -124,6 +124,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="1080px">
       <el-form label-width="96px">
@@ -380,6 +393,9 @@ const festivalCascaderProps = {
 
 const userStore = useUserStore();
 const list = ref<ProductVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const productTree = ref<TreeOption[]>([]);
 const festivalTree = ref<TreeOption[]>([]);
 const filterProductTree = ref<TreeOption[]>([]);
@@ -491,8 +507,8 @@ async function loadTrees() {
   filterProductTree.value = toFilterTree(productNodes);
   filterFestivalTree.value = toFilterTree(festivalNodes);
   try {
-    const s = await fetchSpecList();
-    specs.value = s.data.data || [];
+    const s = await fetchSpecList({ pageSize: 500 });
+    specs.value = s.data.data?.records || [];
   } catch {
     specs.value = [];
   }
@@ -578,11 +594,19 @@ async function load() {
       festivalId: query.festivalId,
       status: query.status,
       supplierId: query.supplierId,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetQuery() {
@@ -591,7 +615,7 @@ function resetQuery() {
   query.festivalId = undefined;
   query.status = undefined;
   query.supplierId = undefined;
-  load();
+  search();
 }
 
 function resetForm() {
@@ -822,6 +846,11 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .upload-row {
   display: flex;

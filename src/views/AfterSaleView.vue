@@ -1,8 +1,8 @@
 <template>
   <div>
     <div class="toolbar">
-      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="load" />
-      <el-input v-model="afterSaleNo" placeholder="售后单号" clearable style="width: 200px" @keyup.enter="load" />
+      <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="search" />
+      <el-input v-model="afterSaleNo" placeholder="售后单号" clearable style="width: 200px" @keyup.enter="search" />
       <el-select v-model="type" clearable placeholder="类型" style="width: 140px">
         <el-option :value="1" label="仅退款" />
         <el-option :value="2" label="退货退款" />
@@ -16,7 +16,7 @@
         <el-option :value="50" label="已撤销" />
         <el-option :value="60" label="已完成" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button v-if="userStore.hasPermission('aftersale:audit')" @click="openReasons">主动退款原因</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -39,6 +39,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" title="售后详情" width="720px">
       <template v-if="detail">
@@ -169,6 +182,9 @@ import {
 
 const userStore = useUserStore();
 const list = ref<AdminAfterSaleVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
 const afterSaleNo = ref("");
@@ -214,11 +230,19 @@ async function load() {
       type: type.value,
       orderNo: orderNo.value || undefined,
       afterSaleNo: afterSaleNo.value || undefined,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 async function openDetail(row: AdminAfterSaleVO) {
@@ -350,6 +374,11 @@ onMounted(load);
   gap: 12px;
   margin-bottom: 16px;
   flex-wrap: wrap;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .imgs {
   display: flex;

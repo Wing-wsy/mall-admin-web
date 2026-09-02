@@ -8,14 +8,14 @@
         clearable
         placeholder="用户名（模糊）"
         style="width: 160px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-input
         v-model="query.nickname"
         clearable
         placeholder="昵称（模糊）"
         style="width: 160px"
-        @keyup.enter="load"
+        @keyup.enter="search"
       />
       <el-select v-model="query.roleId" clearable filterable placeholder="角色" style="width: 160px">
         <el-option v-for="r in roles" :key="r.id" :label="r.name" :value="r.id" />
@@ -24,7 +24,7 @@
         <el-option label="正常" :value="1" />
         <el-option label="停用" :value="0" />
       </el-select>
-      <el-button type="primary" @click="load">查询</el-button>
+      <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
@@ -47,6 +47,19 @@
         </template>
       </el-table-column>
     </el-table>
+
+    <div class="pager">
+      <el-pagination
+        v-model:current-page="pageNum"
+        v-model:page-size="pageSize"
+        :total="total"
+        :page-sizes="[10, 20, 50, 100]"
+        layout="total, sizes, prev, pager, next"
+        background
+        @current-change="load"
+        @size-change="search"
+      />
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑账号' : '新建账号'" width="520px">
       <el-form label-width="90px">
@@ -88,6 +101,9 @@ import { fetchRoleList, type RoleVO } from "@/api/role";
 
 const list = ref<AdminUserVO[]>([]);
 const roles = ref<RoleVO[]>([]);
+const total = ref(0);
+const pageNum = ref(1);
+const pageSize = ref(10);
 const loading = ref(false);
 const visible = ref(false);
 const saving = ref(false);
@@ -108,8 +124,8 @@ const form = reactive({
 });
 
 async function loadRoles() {
-  const { data } = await fetchRoleList();
-  roles.value = data.data || [];
+  const { data } = await fetchRoleList({ pageSize: 500 });
+  roles.value = data.data?.records || [];
 }
 
 async function load() {
@@ -120,11 +136,19 @@ async function load() {
       nickname: query.nickname.trim() || undefined,
       roleId: query.roleId,
       status: query.status,
+      pageNum: pageNum.value,
+      pageSize: pageSize.value,
     });
-    list.value = data.data || [];
+    list.value = data.data?.records || [];
+    total.value = data.data?.total || 0;
   } finally {
     loading.value = false;
   }
+}
+
+function search() {
+  pageNum.value = 1;
+  load();
 }
 
 function resetQuery() {
@@ -132,7 +156,7 @@ function resetQuery() {
   query.nickname = "";
   query.roleId = undefined;
   query.status = undefined;
-  load();
+  search();
 }
 
 function openCreate() {
@@ -209,5 +233,10 @@ onMounted(async () => {
   flex-wrap: wrap;
   align-items: center;
   gap: 8px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 </style>

@@ -19,13 +19,16 @@ export interface AdminBalanceAccountVO {
   nickname?: string;
   phone?: string;
   balance?: number | string;
-  list?: AdminBalanceLogVO[];
+  total?: number;
+  records?: AdminBalanceLogVO[];
 }
 
 export function fetchAdminBalanceLogs(params: {
   memberNo: string;
   orderNo?: string;
   bizType?: string;
+  pageNum?: number;
+  pageSize?: number;
 }) {
   return request.get<ApiResult<AdminBalanceAccountVO>>("/api/admin/balance/logs", { params });
 }
