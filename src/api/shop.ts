@@ -14,6 +14,13 @@ export interface ShopConfigVO {
   voucherEnabled?: boolean;
   pointsEnabled?: boolean;
   couponEnabled?: boolean;
+  dailyReportEnabled?: boolean;
+  dailyReportEmails?: string;
+  orderPaidNotifyEnabled?: boolean;
+  orderPaidNotifyEmails?: string;
+  approvalNotifyEnabled?: boolean;
+  approvalNotifyEmails?: string;
+  approvalNotifyHours?: string;
 }
 
 export interface ShopConfigSavePayload {
@@ -30,6 +37,13 @@ export interface ShopConfigSavePayload {
   voucherEnabled?: boolean;
   pointsEnabled?: boolean;
   couponEnabled?: boolean;
+  dailyReportEnabled?: boolean;
+  dailyReportEmails?: string;
+  orderPaidNotifyEnabled?: boolean;
+  orderPaidNotifyEmails?: string;
+  approvalNotifyEnabled?: boolean;
+  approvalNotifyEmails?: string;
+  approvalNotifyHours?: string;
 }
 
 export interface SelfOperatedVO {

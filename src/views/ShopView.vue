@@ -3,6 +3,9 @@
     <el-tabs v-model="tab">
       <el-tab-pane label="客服配置" name="contact" />
       <el-tab-pane label="自营供应商" name="self" />
+      <el-tab-pane label="日报推送" name="report" />
+      <el-tab-pane label="支付通知" name="paidNotify" />
+      <el-tab-pane label="审批通知" name="approvalNotify" />
       <el-tab-pane label="运费" name="freight" />
     </el-tabs>
 
@@ -85,6 +88,103 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="selfSaving" @click="saveSelf">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'report'" v-loading="contactLoading" class="card">
+      <p class="hint">
+        每天上午 09:00（北京时间）自动推送上一自然日经营数据到下列邮箱；同一租户下各邮箱收到内容相同。需同时配置服务器 SMTP（MAIL_* 环境变量）。
+      </p>
+      <el-form label-width="108px" style="max-width: 560px">
+        <el-form-item label="开启推送">
+          <el-switch v-model="contact.dailyReportEnabled" />
+        </el-form-item>
+        <el-form-item label="收件邮箱" required>
+          <el-input
+            v-model="contact.dailyReportEmails"
+            type="textarea"
+            :rows="4"
+            maxlength="512"
+            show-word-limit
+            placeholder="一行一个，或用逗号分隔，最多 10 个"
+          />
+          <div class="tip">例如：ops@example.com, boss@example.com</div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="reportSaving" @click="saveReport">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'paidNotify'" v-loading="contactLoading" class="card">
+      <p class="hint">
+        用户下单并支付成功后，立即通知下列邮箱（与「日报推送」收件人相互独立）。积分兑换 / 兑换券核销下单成功也会通知。
+      </p>
+      <el-form label-width="108px" style="max-width: 560px">
+        <el-form-item label="开启通知">
+          <el-switch v-model="contact.orderPaidNotifyEnabled" />
+        </el-form-item>
+        <el-form-item label="收件邮箱" required>
+          <el-input
+            v-model="contact.orderPaidNotifyEmails"
+            type="textarea"
+            :rows="4"
+            maxlength="512"
+            show-word-limit
+            placeholder="一行一个，或用逗号分隔，最多 10 个"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="paidNotifySaving" @click="savePaidNotify">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'approvalNotify'" v-loading="contactLoading" class="card">
+      <p class="hint">
+        供应商入驻、商品提交审批、用户申请售后进入待审时立即通知；若仍未处理，按下方催办小时再次提醒。收件人与日报 / 支付通知相互独立。
+      </p>
+      <el-form label-width="108px" style="max-width: 560px">
+        <el-form-item label="开启通知">
+          <el-switch v-model="contact.approvalNotifyEnabled" />
+        </el-form-item>
+        <el-form-item label="收件邮箱" required>
+          <el-input
+            v-model="contact.approvalNotifyEmails"
+            type="textarea"
+            :rows="4"
+            maxlength="512"
+            show-word-limit
+            placeholder="一行一个，或用逗号分隔，最多 10 个"
+          />
+        </el-form-item>
+        <el-form-item label="催办小时">
+          <div class="hours-editor">
+            <el-tag
+              v-for="(h, index) in approvalHours"
+              :key="`${h}-${index}`"
+              closable
+              class="hour-tag"
+              @close="removeHour(index)"
+            >
+              {{ h }} 小时
+            </el-tag>
+            <el-input-number
+              v-model="hourDraft"
+              class="hour-input"
+              controls-position="right"
+              :min="1"
+              :max="168"
+              :step="1"
+              :precision="0"
+            />
+            <el-button @click="addHour">添加</el-button>
+          </div>
+          <div class="tip">自由列表，默认 1 / 3 / 6 小时；留空则只发提交即时通知。最多 10 档，单档不超过 168 小时。</div>
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="approvalNotifySaving" @click="saveApprovalNotify">保存</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -185,9 +285,14 @@ const tab = ref("contact");
 const contactLoading = ref(false);
 const contactSaving = ref(false);
 const selfSaving = ref(false);
+const reportSaving = ref(false);
+const paidNotifySaving = ref(false);
+const approvalNotifySaving = ref(false);
 const freightLoading = ref(false);
 const freightSaving = ref(false);
 const provinceOptions = ref<string[]>([]);
+const approvalHours = ref<number[]>([1, 3, 6]);
+const hourDraft = ref<number | null>(24);
 
 const contact = reactive({
   csPhone: "",
@@ -203,7 +308,46 @@ const contact = reactive({
   voucherEnabled: false,
   pointsEnabled: false,
   couponEnabled: false,
+  dailyReportEnabled: false,
+  dailyReportEmails: "",
+  orderPaidNotifyEnabled: false,
+  orderPaidNotifyEmails: "",
+  approvalNotifyEnabled: false,
+  approvalNotifyEmails: "",
 });
+
+function parseHours(raw?: string | null): number[] {
+  if (raw == null) return [1, 3, 6];
+  if (!raw.trim()) return [];
+  const set = new Set<number>();
+  for (const part of raw.split(/[,;\s\n\r]+/)) {
+    if (!part) continue;
+    const n = Number(part);
+    if (Number.isInteger(n) && n >= 1 && n <= 168) set.add(n);
+  }
+  return [...set].sort((a, b) => a - b);
+}
+
+function addHour() {
+  const n = hourDraft.value;
+  if (n == null || !Number.isInteger(n) || n < 1 || n > 168) {
+    ElMessage.warning("请输入 1～168 的整数小时");
+    return;
+  }
+  if (approvalHours.value.includes(n)) {
+    ElMessage.warning("该小时已存在");
+    return;
+  }
+  if (approvalHours.value.length >= 10) {
+    ElMessage.warning("最多 10 档催办");
+    return;
+  }
+  approvalHours.value = [...approvalHours.value, n].sort((a, b) => a - b);
+}
+
+function removeHour(index: number) {
+  approvalHours.value.splice(index, 1);
+}
 
 function emptyRule(): FreightRuleVO {
   return { provinces: [], firstQty: 1, firstFee: 0, extraQty: 1, extraFee: 0 };
@@ -245,6 +389,13 @@ async function loadContact() {
     contact.voucherEnabled = !!data.data?.voucherEnabled;
     contact.pointsEnabled = !!data.data?.pointsEnabled;
     contact.couponEnabled = !!data.data?.couponEnabled;
+    contact.dailyReportEnabled = !!data.data?.dailyReportEnabled;
+    contact.dailyReportEmails = data.data?.dailyReportEmails || "";
+    contact.orderPaidNotifyEnabled = !!data.data?.orderPaidNotifyEnabled;
+    contact.orderPaidNotifyEmails = data.data?.orderPaidNotifyEmails || "";
+    contact.approvalNotifyEnabled = !!data.data?.approvalNotifyEnabled;
+    contact.approvalNotifyEmails = data.data?.approvalNotifyEmails || "";
+    approvalHours.value = parseHours(data.data?.approvalNotifyHours);
   } finally {
     contactLoading.value = false;
   }
@@ -299,6 +450,59 @@ async function saveSelf() {
     // interceptor already toasted
   } finally {
     selfSaving.value = false;
+  }
+}
+
+async function saveReport() {
+  reportSaving.value = true;
+  try {
+    const { data } = await saveShopConfig({
+      dailyReportEnabled: contact.dailyReportEnabled,
+      dailyReportEmails: contact.dailyReportEmails.trim(),
+    });
+    contact.dailyReportEnabled = !!data.data?.dailyReportEnabled;
+    contact.dailyReportEmails = data.data?.dailyReportEmails || "";
+    ElMessage.success("已保存");
+  } catch {
+    // interceptor already toasted
+  } finally {
+    reportSaving.value = false;
+  }
+}
+
+async function savePaidNotify() {
+  paidNotifySaving.value = true;
+  try {
+    const { data } = await saveShopConfig({
+      orderPaidNotifyEnabled: contact.orderPaidNotifyEnabled,
+      orderPaidNotifyEmails: contact.orderPaidNotifyEmails.trim(),
+    });
+    contact.orderPaidNotifyEnabled = !!data.data?.orderPaidNotifyEnabled;
+    contact.orderPaidNotifyEmails = data.data?.orderPaidNotifyEmails || "";
+    ElMessage.success("已保存");
+  } catch {
+    // interceptor already toasted
+  } finally {
+    paidNotifySaving.value = false;
+  }
+}
+
+async function saveApprovalNotify() {
+  approvalNotifySaving.value = true;
+  try {
+    const { data } = await saveShopConfig({
+      approvalNotifyEnabled: contact.approvalNotifyEnabled,
+      approvalNotifyEmails: contact.approvalNotifyEmails.trim(),
+      approvalNotifyHours: approvalHours.value.join(","),
+    });
+    contact.approvalNotifyEnabled = !!data.data?.approvalNotifyEnabled;
+    contact.approvalNotifyEmails = data.data?.approvalNotifyEmails || "";
+    approvalHours.value = parseHours(data.data?.approvalNotifyHours);
+    ElMessage.success("已保存");
+  } catch {
+    // interceptor already toasted
+  } finally {
+    approvalNotifySaving.value = false;
   }
 }
 
@@ -387,6 +591,19 @@ onMounted(() => {
   margin-left: 12px;
   color: #9ca3af;
   font-size: 13px;
+}
+.hours-editor {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.hour-tag {
+  margin: 0;
+}
+.hour-input {
+  width: 120px;
 }
 .rule-row {
   display: flex;
