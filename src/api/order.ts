@@ -1,15 +1,27 @@
 import request, { type ApiResult, type PageResult } from "@/utils/request";
 
+export interface AdminOrderComponentVO {
+  productId?: number;
+  skuId?: number;
+  productName: string;
+  coverUrl?: string;
+  specName?: string;
+  quantity: number;
+}
+
 export interface AdminOrderItemVO {
   id: number;
-  productId: number;
-  skuId: number;
+  itemType?: number;
+  comboId?: number;
+  productId?: number;
+  skuId?: number;
   productName: string;
   coverUrl?: string;
   specName?: string;
   price: number;
   quantity: number;
   amount: number;
+  components?: AdminOrderComponentVO[];
 }
 
 export interface AdminOrderVO {

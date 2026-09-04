@@ -5,6 +5,7 @@
       <el-tab-pane label="自营供应商" name="self" />
       <el-tab-pane label="日报推送" name="report" />
       <el-tab-pane label="支付通知" name="paidNotify" />
+      <el-tab-pane label="库存告警" name="stockAlert" />
       <el-tab-pane label="审批通知" name="approvalNotify" />
       <el-tab-pane label="运费" name="freight" />
     </el-tabs>
@@ -137,6 +138,30 @@
         </el-form-item>
         <el-form-item>
           <el-button type="primary" :loading="paidNotifySaving" @click="savePaidNotify">保存</el-button>
+        </el-form-item>
+      </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'stockAlert'" v-loading="contactLoading" class="card">
+      <p class="hint">
+        用户下单扣库存后，若商品当前库存 ≤ 该商品配置的告警数量，则写站内信；开启下方开关后同时发邮件。同一商品跌破后只告一次，库存回升到阈值以上后可再次告警。未配置告警数量的商品不告警。
+      </p>
+      <el-form label-width="108px" style="max-width: 560px">
+        <el-form-item label="开启邮件">
+          <el-switch v-model="contact.stockAlertEnabled" />
+        </el-form-item>
+        <el-form-item label="收件邮箱" required>
+          <el-input
+            v-model="contact.stockAlertEmails"
+            type="textarea"
+            :rows="4"
+            maxlength="512"
+            show-word-limit
+            placeholder="一行一个，或用逗号分隔，最多 10 个"
+          />
+        </el-form-item>
+        <el-form-item>
+          <el-button type="primary" :loading="stockAlertSaving" @click="saveStockAlert">保存</el-button>
         </el-form-item>
       </el-form>
     </el-card>
@@ -287,6 +312,7 @@ const contactSaving = ref(false);
 const selfSaving = ref(false);
 const reportSaving = ref(false);
 const paidNotifySaving = ref(false);
+const stockAlertSaving = ref(false);
 const approvalNotifySaving = ref(false);
 const freightLoading = ref(false);
 const freightSaving = ref(false);
@@ -312,6 +338,8 @@ const contact = reactive({
   dailyReportEmails: "",
   orderPaidNotifyEnabled: false,
   orderPaidNotifyEmails: "",
+  stockAlertEnabled: false,
+  stockAlertEmails: "",
   approvalNotifyEnabled: false,
   approvalNotifyEmails: "",
 });
@@ -393,6 +421,8 @@ async function loadContact() {
     contact.dailyReportEmails = data.data?.dailyReportEmails || "";
     contact.orderPaidNotifyEnabled = !!data.data?.orderPaidNotifyEnabled;
     contact.orderPaidNotifyEmails = data.data?.orderPaidNotifyEmails || "";
+    contact.stockAlertEnabled = !!data.data?.stockAlertEnabled;
+    contact.stockAlertEmails = data.data?.stockAlertEmails || "";
     contact.approvalNotifyEnabled = !!data.data?.approvalNotifyEnabled;
     contact.approvalNotifyEmails = data.data?.approvalNotifyEmails || "";
     approvalHours.value = parseHours(data.data?.approvalNotifyHours);
@@ -484,6 +514,23 @@ async function savePaidNotify() {
     // interceptor already toasted
   } finally {
     paidNotifySaving.value = false;
+  }
+}
+
+async function saveStockAlert() {
+  stockAlertSaving.value = true;
+  try {
+    const { data } = await saveShopConfig({
+      stockAlertEnabled: contact.stockAlertEnabled,
+      stockAlertEmails: contact.stockAlertEmails.trim(),
+    });
+    contact.stockAlertEnabled = !!data.data?.stockAlertEnabled;
+    contact.stockAlertEmails = data.data?.stockAlertEmails || "";
+    ElMessage.success("已保存");
+  } catch {
+    // interceptor already toasted
+  } finally {
+    stockAlertSaving.value = false;
   }
 }
 

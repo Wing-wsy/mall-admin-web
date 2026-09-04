@@ -46,6 +46,12 @@ const router = createRouter({
           meta: { title: "商品管理", permission: "product" },
         },
         {
+          path: "combos",
+          name: "combos",
+          component: () => import("@/views/ComboView.vue"),
+          meta: { title: "组合套装", permission: "combo" },
+        },
+        {
           path: "suppliers",
           name: "suppliers",
           component: () => import("@/views/SupplierView.vue"),
@@ -74,6 +80,12 @@ const router = createRouter({
           name: "after-sales",
           component: () => import("@/views/AfterSaleView.vue"),
           meta: { title: "售后管理", permission: "aftersale" },
+        },
+        {
+          path: "order-reviews",
+          name: "order-reviews",
+          component: () => import("@/views/OrderReviewView.vue"),
+          meta: { title: "订单评价", permission: "order-review" },
         },
         {
           path: "members",

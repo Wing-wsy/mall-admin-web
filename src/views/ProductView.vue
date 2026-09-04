@@ -205,6 +205,11 @@
           <el-input-number v-model="form.stock" :min="0" :precision="0" />
           <span class="tip">按库存单位「{{ baseSpecName || "—" }}」计</span>
         </el-form-item>
+        <el-form-item label="告警库存">
+          <el-input-number v-model="form.stockAlertQty" :min="0" :precision="0" />
+          <el-button link type="primary" @click="form.stockAlertQty = undefined">清除</el-button>
+          <span class="tip">低于该值告警；不填则不告警</span>
+        </el-form-item>
         <el-form-item label="售卖规格" required>
           <div class="sku-block">
             <el-table :data="form.skus" border size="small">
@@ -428,6 +433,7 @@ const form = reactive({
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
   stock: 0,
+  stockAlertQty: undefined as number | undefined,
   supplierId: 0 as number,
   skus: [] as SkuRow[],
 });
@@ -630,6 +636,7 @@ function resetForm() {
   form.categoryId = undefined;
   form.festivalIds = [];
   form.stock = 0;
+  form.stockAlertQty = undefined;
   form.supplierId = userStore.isSupplier
     ? (supplierOptions.value.length === 1 ? supplierOptions.value[0].id : (undefined as unknown as number))
     : 0;
@@ -666,6 +673,7 @@ async function openEdit(row: ProductVO) {
   form.categoryId = row.categoryId;
   form.festivalIds = [...(row.festivalIds || [])];
   form.stock = row.stock ?? 0;
+  form.stockAlertQty = row.stockAlertQty ?? undefined;
   form.supplierId = row.supplierId ?? 0;
   form.skus = (row.skus || []).map((sku) => ({
     specId: sku.specId,
@@ -745,6 +753,10 @@ async function save() {
     ElMessage.warning("库存不能为负数");
     return;
   }
+  if (form.stockAlertQty != null && form.stockAlertQty < 0) {
+    ElMessage.warning("告警库存不能为负数");
+    return;
+  }
   if (userStore.isSupplier && !form.supplierId) {
     ElMessage.warning("请选择归属供应商");
     return;
@@ -763,6 +775,7 @@ async function save() {
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
       stock: form.stock,
+      stockAlertQty: form.stockAlertQty ?? null,
       skus: skus.map((row, index) => ({
         specId: row.specId as number,
         price: row.price,

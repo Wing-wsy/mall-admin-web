@@ -23,6 +23,7 @@ export interface ProductVO {
   originPrice?: number;
   stock?: number;
   stockSummary?: string;
+  stockAlertQty?: number | null;
   detailHtml?: string;
   detailImageUrls?: string[];
   status: number;
@@ -61,6 +62,7 @@ export interface ProductSavePayload {
   categoryId: number;
   festivalIds?: number[];
   stock?: number;
+  stockAlertQty?: number | null;
   skus: ProductSkuPayload[];
   supplierId?: number | null;
 }

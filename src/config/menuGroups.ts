@@ -1,9 +1,9 @@
 import type { MenuNode } from "@/stores/user";
 
 export const MENU_GROUPS: { code: string; name: string; childCodes: string[] }[] = [
-  { code: "goods", name: "商品", childCodes: ["product", "category", "festival", "spec"] },
+  { code: "goods", name: "商品", childCodes: ["product", "combo", "category", "festival", "spec"] },
   { code: "marketing", name: "营销", childCodes: ["banner", "nav", "hot", "iconset", "theme", "coupon", "point", "voucher"] },
-  { code: "trade", name: "交易", childCodes: ["order", "aftersale", "commission", "balance"] },
+  { code: "trade", name: "交易", childCodes: ["order", "aftersale", "commission", "balance", "order-review"] },
   { code: "ums", name: "用户", childCodes: ["member", "level", "blacklist", "supplier", "system:tenant"] },
   { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog", "system:cache"] },
 ];
@@ -12,6 +12,7 @@ const MENU_TITLES: Record<string, string> = {
   dashboard: "工作台",
   goods: "商品",
   product: "商品管理",
+  combo: "组合套装",
   category: "商品分类",
   festival: "节日分类",
   spec: "规格管理",
@@ -29,6 +30,7 @@ const MENU_TITLES: Record<string, string> = {
   aftersale: "售后管理",
   commission: "佣金管理",
   balance: "资金流水",
+  "order-review": "订单评价",
   ums: "用户",
   member: "用户管理",
   level: "会员等级",

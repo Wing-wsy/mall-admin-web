@@ -21,6 +21,8 @@ export interface ShopConfigVO {
   approvalNotifyEnabled?: boolean;
   approvalNotifyEmails?: string;
   approvalNotifyHours?: string;
+  stockAlertEnabled?: boolean;
+  stockAlertEmails?: string;
 }
 
 export interface ShopConfigSavePayload {
@@ -44,6 +46,8 @@ export interface ShopConfigSavePayload {
   approvalNotifyEnabled?: boolean;
   approvalNotifyEmails?: string;
   approvalNotifyHours?: string;
+  stockAlertEnabled?: boolean;
+  stockAlertEmails?: string;
 }
 
 export interface SelfOperatedVO {

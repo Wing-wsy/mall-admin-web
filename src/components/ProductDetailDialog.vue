@@ -36,6 +36,9 @@
         <el-descriptions-item label="现价">¥{{ detail.price }}</el-descriptions-item>
         <el-descriptions-item label="原价">{{ detail.originPrice != null ? `¥${detail.originPrice}` : "-" }}</el-descriptions-item>
         <el-descriptions-item label="库存">{{ detail.stockSummary || detail.stock || 0 }}</el-descriptions-item>
+        <el-descriptions-item label="告警库存">
+          {{ detail.stockAlertQty != null ? detail.stockAlertQty : "未设置" }}
+        </el-descriptions-item>
         <el-descriptions-item label="节日分类">
           {{ detail.festivalPaths?.length ? detail.festivalPaths.join("；") : "无" }}
         </el-descriptions-item>

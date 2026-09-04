@@ -40,7 +40,12 @@
         <template #default="{ row }">
           <div v-if="row.items?.length" class="goods">
             <div v-for="item in row.items" :key="item.id" class="goods-line">
-              {{ item.productName }}{{ item.specName ? " " + item.specName : "" }} x{{ item.quantity }}
+              <template v-if="item.itemType === 2">
+                [礼盒] {{ item.productName }} x{{ item.quantity }}盒
+              </template>
+              <template v-else>
+                {{ item.productName }}{{ item.specName ? " " + item.specName : "" }} x{{ item.quantity }}
+              </template>
             </div>
           </div>
           <span v-else>-</span>
@@ -147,22 +152,53 @@
           <el-descriptions-item v-if="detail.cancelReason" label="取消原因" :span="2">{{ detail.cancelReason }}</el-descriptions-item>
         </el-descriptions>
         <el-table :data="detail.items || []" border style="margin-top: 16px">
-          <el-table-column label="商品" min-width="160">
+          <el-table-column label="商品" min-width="200">
             <template #default="{ row }">
-              <el-button
-                v-if="row.productId"
-                link
-                type="primary"
-                @click="openProduct(row.productId)"
-              >
-                {{ row.productName }}
-              </el-button>
-              <span v-else>{{ row.productName }}</span>
+              <div>
+                <el-tag v-if="row.itemType === 2" size="small" type="warning" style="margin-right: 6px">礼盒套装</el-tag>
+                <el-button
+                  v-if="row.itemType === 2 && row.comboId"
+                  link
+                  type="primary"
+                  @click="openCombo(row.comboId)"
+                >
+                  {{ row.productName }}
+                </el-button>
+                <el-button
+                  v-else-if="row.productId"
+                  link
+                  type="primary"
+                  @click="openProduct(row.productId)"
+                >
+                  {{ row.productName }}
+                </el-button>
+                <span v-else>{{ row.productName }}</span>
+              </div>
+              <div v-if="row.itemType === 2 && row.components?.length" class="pack-list">
+                <div v-for="(c, idx) in row.components" :key="idx" class="pack-line">
+                  ·
+                  <el-button
+                    v-if="c.productId"
+                    link
+                    type="primary"
+                    class="pack-link"
+                    @click="openProduct(c.productId)"
+                  >
+                    {{ c.productName }}{{ c.specName ? " " + c.specName : "" }}
+                  </el-button>
+                  <span v-else>{{ c.productName }}{{ c.specName ? " " + c.specName : "" }}</span>
+                  ×{{ c.quantity }}
+                </div>
+              </div>
             </template>
           </el-table-column>
           <el-table-column prop="specName" label="规格" width="80" />
           <el-table-column prop="price" label="单价" width="90" />
-          <el-table-column prop="quantity" label="数量" width="70" />
+          <el-table-column label="数量" width="90">
+            <template #default="{ row }">
+              {{ row.quantity }}{{ row.itemType === 2 ? " 盒" : "" }}
+            </template>
+          </el-table-column>
           <el-table-column prop="amount" label="小计" width="90" />
         </el-table>
       </template>
@@ -194,6 +230,7 @@
     </el-dialog>
 
     <ProductDetailDialog v-model="productVisible" :product-id="productId" />
+    <ComboDetailDialog v-model="comboVisible" :combo-id="comboId" />
 
     <el-dialog v-model="shipVisible" title="发货" width="420px" @closed="resetShip">
       <el-form label-width="88px">
@@ -234,6 +271,7 @@ import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
+import ComboDetailDialog from "@/components/ComboDetailDialog.vue";
 import { useUserStore } from "@/stores/user";
 import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 import { directRefund, fetchDirectRefundReasonOptions, type AfterSaleReasonVO } from "@/api/aftersale";
@@ -264,6 +302,8 @@ const visible = ref(false);
 const detail = ref<AdminOrderVO | null>(null);
 const productVisible = ref(false);
 const productId = ref<number>();
+const comboVisible = ref(false);
+const comboId = ref<number>();
 const expressVisible = ref(false);
 const expressLoading = ref(false);
 const expressDetail = ref<AdminExpressVO | null>(null);
@@ -334,6 +374,11 @@ async function openDetail(row: AdminOrderVO) {
 function openProduct(id: number) {
   productId.value = id;
   productVisible.value = true;
+}
+
+function openCombo(id: number) {
+  comboId.value = id;
+  comboVisible.value = true;
 }
 
 async function openExpress() {
@@ -489,6 +534,20 @@ onMounted(async () => {
 }
 .goods-line + .goods-line {
   margin-top: 4px;
+}
+.pack-list {
+  margin-top: 6px;
+  color: #6b7280;
+  font-size: 12px;
+  line-height: 1.5;
+}
+.pack-line {
+  padding-left: 2px;
+}
+.pack-link {
+  padding: 0;
+  height: auto;
+  font-size: 12px;
 }
 .st-10 {
   --el-tag-bg-color: #fef3c7;
