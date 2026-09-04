@@ -43,7 +43,7 @@
         </el-form-item>
         <el-form-item label="维护模式">
           <el-switch v-model="contact.maintenanceEnabled" />
-          <span class="tip">开启后小程序仍可登录并看首页列表，其余接口拦截；开启时首页公告会改为「系统维护中」</span>
+          <span class="tip">开启后小程序仍可登录并看首页列表，其余接口拦截；开启时首页公告会改为「系统维护中」；开关变更会发站内信</span>
         </el-form-item>
         <el-form-item label="退货联系人">
           <el-input v-model="contact.returnName" maxlength="64" placeholder="退货退款时展示给用户" />

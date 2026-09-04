@@ -249,7 +249,7 @@ onMounted(async () => {
     // keep cached profile
   }
   await refreshUnread();
-  pollTimer = setInterval(refreshUnread, 30000);
+  pollTimer = setInterval(refreshUnread, 10000);
 });
 
 onUnmounted(() => {
