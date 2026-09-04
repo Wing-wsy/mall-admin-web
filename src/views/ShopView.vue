@@ -41,6 +41,10 @@
           <el-switch v-model="contact.couponEnabled" />
           <span class="tip">关闭后小程序不展示优惠券入口，下单也不可用券；后台仍可管理券模板</span>
         </el-form-item>
+        <el-form-item label="维护模式">
+          <el-switch v-model="contact.maintenanceEnabled" />
+          <span class="tip">开启后小程序仍可登录并看首页列表，其余接口拦截；开启时首页公告会改为「系统维护中」</span>
+        </el-form-item>
         <el-form-item label="退货联系人">
           <el-input v-model="contact.returnName" maxlength="64" placeholder="退货退款时展示给用户" />
         </el-form-item>
@@ -334,6 +338,7 @@ const contact = reactive({
   voucherEnabled: false,
   pointsEnabled: false,
   couponEnabled: false,
+  maintenanceEnabled: false,
   dailyReportEnabled: false,
   dailyReportEmails: "",
   orderPaidNotifyEnabled: false,
@@ -417,6 +422,7 @@ async function loadContact() {
     contact.voucherEnabled = !!data.data?.voucherEnabled;
     contact.pointsEnabled = !!data.data?.pointsEnabled;
     contact.couponEnabled = !!data.data?.couponEnabled;
+    contact.maintenanceEnabled = !!data.data?.maintenanceEnabled;
     contact.dailyReportEnabled = !!data.data?.dailyReportEnabled;
     contact.dailyReportEmails = data.data?.dailyReportEmails || "";
     contact.orderPaidNotifyEnabled = !!data.data?.orderPaidNotifyEnabled;
@@ -444,6 +450,7 @@ async function saveContact() {
       voucherEnabled: contact.voucherEnabled,
       pointsEnabled: contact.pointsEnabled,
       couponEnabled: contact.couponEnabled,
+      maintenanceEnabled: contact.maintenanceEnabled,
     });
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
@@ -454,6 +461,7 @@ async function saveContact() {
     contact.voucherEnabled = !!data.data?.voucherEnabled;
     contact.pointsEnabled = !!data.data?.pointsEnabled;
     contact.couponEnabled = !!data.data?.couponEnabled;
+    contact.maintenanceEnabled = !!data.data?.maintenanceEnabled;
     ElMessage.success("已保存");
   } catch {
     // interceptor already toasted
