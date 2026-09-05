@@ -136,15 +136,16 @@
                 style="width: 280px"
                 @change="onProductChange(item)"
               />
-              <el-select v-model="item.skuId" placeholder="规格" style="width: 140px">
+              <el-select v-model="item.skuId" placeholder="SKU" style="width: 160px">
                 <el-option
                   v-for="s in skusOf(item.productId)"
                   :key="s.id"
-                  :label="s.specName || '规格'"
+                  :label="s.attrText || s.specName || '默认'"
                   :value="s.id!"
                 />
               </el-select>
               <el-input-number v-model="item.quantity" :min="1" />
+              <span class="tip">数量按库存单位</span>
               <el-button link type="danger" @click="form.items.splice(idx, 1)">删除</el-button>
             </div>
             <el-button @click="addItem">添加组成</el-button>

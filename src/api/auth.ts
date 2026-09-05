@@ -6,6 +6,7 @@ export interface AdminLoginResult {
   userId: number;
   username: string;
   nickname?: string;
+  avatarUrl?: string;
   tenantId: number;
   tenantType: number;
   tenantName?: string;
@@ -29,4 +30,8 @@ export function logoutAdmin() {
 
 export function fetchAdminMe() {
   return request.get<ApiResult<AdminLoginResult>>("/api/admin/auth/me");
+}
+
+export function updateAdminProfile(payload: { avatarUrl?: string }) {
+  return request.put<ApiResult<AdminLoginResult>>("/api/admin/auth/profile", payload);
 }

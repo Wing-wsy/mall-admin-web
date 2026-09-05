@@ -124,10 +124,16 @@ const router = createRouter({
           meta: { title: "兑换券", permission: "voucher" },
         },
         {
+          path: "sale-attrs",
+          name: "sale-attrs",
+          component: () => import("@/views/SaleAttrView.vue"),
+          meta: { title: "销售属性", permission: "sale-attr" },
+        },
+        {
           path: "specs",
           name: "specs",
           component: () => import("@/views/SpecView.vue"),
-          meta: { title: "规格管理", permission: "spec" },
+          meta: { title: "售卖单位", permission: "spec" },
         },
         {
           path: "banners",

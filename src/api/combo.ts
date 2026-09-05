@@ -7,6 +7,7 @@ export interface ComboItemVO {
   skuId: number;
   productName?: string;
   coverUrl?: string;
+  attrText?: string;
   specName?: string;
   skuPrice?: number;
   quantity: number;

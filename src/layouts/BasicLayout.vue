@@ -94,6 +94,17 @@
             </div>
           </el-popover>
           <span class="user">{{ userStore.tenantName }} · {{ userStore.nickname || userStore.username }}</span>
+          <el-upload
+            class="avatar-upload"
+            :show-file-list="false"
+            :http-request="onAvatarUpload"
+            accept="image/*"
+            title="点击更换头像"
+          >
+            <el-avatar :size="28" :src="userStore.avatarUrl || undefined">
+              {{ avatarLetter }}
+            </el-avatar>
+          </el-upload>
           <el-button link type="primary" @click="onLogout">退出</el-button>
         </div>
       </el-header>
@@ -112,8 +123,10 @@
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
 import { Bell } from "@element-plus/icons-vue";
-import { ElNotification } from "element-plus";
-import { fetchAdminMe, logoutAdmin } from "@/api/auth";
+import { ElMessage, ElNotification } from "element-plus";
+import type { UploadRequestOptions } from "element-plus";
+import { fetchAdminMe, logoutAdmin, updateAdminProfile } from "@/api/auth";
+import { uploadAdminFile } from "@/api/product";
 import {
   fetchInboxList,
   fetchInboxUnreadCount,
@@ -129,6 +142,10 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const tabStore = useTabStore();
+
+const avatarLetter = computed(() =>
+  (userStore.nickname || userStore.username || "?").slice(0, 1)
+);
 
 const sidebarMenus = computed(() => buildSidebarMenus(userStore.menus));
 const dashboardItem = computed(() => sidebarMenus.value.find((n) => n.code === "dashboard"));
@@ -274,6 +291,22 @@ async function onLogout() {
   userStore.logout();
   router.push("/login");
 }
+
+async function onAvatarUpload(options: UploadRequestOptions) {
+  try {
+    const { data: upload } = await uploadAdminFile(options.file as File, "avatar");
+    const url = upload?.data?.url;
+    if (!url) {
+      ElMessage.error("上传失败");
+      return;
+    }
+    const { data } = await updateAdminProfile({ avatarUrl: url });
+    if (data?.data) userStore.login(data.data);
+    ElMessage.success("头像已更新");
+  } catch {
+    // request interceptor already toasts
+  }
+}
 </script>
 
 <style scoped>
@@ -408,6 +441,14 @@ async function onLogout() {
 .user {
   color: #6b7280;
   font-size: 14px;
+}
+.avatar-upload {
+  display: inline-flex;
+  cursor: pointer;
+  line-height: 0;
+}
+.avatar-upload :deep(.el-upload) {
+  display: inline-flex;
 }
 .inbox-trigger {
   display: inline-flex;

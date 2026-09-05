@@ -1,7 +1,7 @@
 import type { MenuNode } from "@/stores/user";
 
 export const MENU_GROUPS: { code: string; name: string; childCodes: string[] }[] = [
-  { code: "goods", name: "商品", childCodes: ["product", "combo", "category", "festival", "spec"] },
+  { code: "goods", name: "商品", childCodes: ["product", "combo", "category", "festival", "sale-attr", "spec"] },
   { code: "marketing", name: "营销", childCodes: ["banner", "nav", "hot", "iconset", "theme", "coupon", "point", "voucher"] },
   { code: "trade", name: "交易", childCodes: ["order", "aftersale", "commission", "balance", "order-review"] },
   { code: "ums", name: "用户", childCodes: ["member", "level", "blacklist", "supplier", "system:tenant"] },
@@ -15,7 +15,8 @@ const MENU_TITLES: Record<string, string> = {
   combo: "组合套装",
   category: "商品分类",
   festival: "节日分类",
-  spec: "规格管理",
+  "sale-attr": "销售属性",
+  spec: "售卖单位",
   marketing: "营销",
   banner: "轮播管理",
   nav: "首页导航",

@@ -16,6 +16,7 @@ export const useUserStore = defineStore("user", () => {
   const token = ref(localStorage.getItem("mall_admin_token") || "");
   const username = ref(localStorage.getItem("mall_admin_username") || "");
   const nickname = ref(localStorage.getItem("mall_admin_nickname") || "");
+  const avatarUrl = ref(localStorage.getItem("mall_admin_avatar") || "");
   const tenantId = ref<number | null>(Number(localStorage.getItem("mall_admin_tenant_id") || 0) || null);
   const tenantName = ref(localStorage.getItem("mall_admin_tenant_name") || "");
   const tenantType = ref<number | null>(Number(localStorage.getItem("mall_admin_tenant_type") || 0) || null);
@@ -60,6 +61,7 @@ export const useUserStore = defineStore("user", () => {
     token: string;
     username: string;
     nickname?: string;
+    avatarUrl?: string;
     tenantId?: number;
     tenantName?: string;
     tenantType?: number;
@@ -70,6 +72,7 @@ export const useUserStore = defineStore("user", () => {
     token.value = profile.token;
     username.value = profile.username;
     nickname.value = profile.nickname || profile.username;
+    avatarUrl.value = profile.avatarUrl || "";
     tenantId.value = profile.tenantId ?? null;
     tenantName.value = profile.tenantName || "";
     tenantType.value = profile.tenantType ?? null;
@@ -79,6 +82,7 @@ export const useUserStore = defineStore("user", () => {
     localStorage.setItem("mall_admin_token", profile.token);
     localStorage.setItem("mall_admin_username", profile.username);
     localStorage.setItem("mall_admin_nickname", nickname.value);
+    localStorage.setItem("mall_admin_avatar", avatarUrl.value);
     localStorage.setItem("mall_admin_tenant_id", String(profile.tenantId || ""));
     localStorage.setItem("mall_admin_tenant_name", tenantName.value);
     localStorage.setItem("mall_admin_tenant_type", String(profile.tenantType || ""));
@@ -91,6 +95,7 @@ export const useUserStore = defineStore("user", () => {
     token.value = "";
     username.value = "";
     nickname.value = "";
+    avatarUrl.value = "";
     tenantId.value = null;
     tenantName.value = "";
     tenantType.value = null;
@@ -101,6 +106,7 @@ export const useUserStore = defineStore("user", () => {
       "mall_admin_token",
       "mall_admin_username",
       "mall_admin_nickname",
+      "mall_admin_avatar",
       "mall_admin_tenant_id",
       "mall_admin_tenant_name",
       "mall_admin_tenant_type",
@@ -115,6 +121,7 @@ export const useUserStore = defineStore("user", () => {
     token,
     username,
     nickname,
+    avatarUrl,
     tenantId,
     tenantName,
     tenantType,

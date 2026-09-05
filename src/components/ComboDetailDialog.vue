@@ -51,7 +51,9 @@
             <span v-else>{{ row.productName || "-" }}</span>
           </template>
         </el-table-column>
-        <el-table-column prop="specName" label="规格" width="120" />
+        <el-table-column label="SKU" width="140">
+          <template #default="{ row }">{{ row.attrText || row.specName || "-" }}</template>
+        </el-table-column>
         <el-table-column label="数量" width="80">
           <template #default="{ row }">×{{ row.quantity }}</template>
         </el-table-column>

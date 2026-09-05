@@ -2,15 +2,45 @@ import request, { type ApiResult } from "@/utils/request";
 
 export interface ProductSkuVO {
   id?: number;
-  specId: number;
-  specName?: string;
+  attrValueIds?: number[];
+  attrText?: string;
   price: number;
   originPrice?: number;
+  stock?: number;
+  coverUrl?: string;
   status: number;
   sort?: number;
+  /** @deprecated packaging fields moved to sellUnits */
+  specId?: number;
+  specName?: string;
   isBase?: number;
   convertQty?: number;
   freightQty?: number;
+}
+
+export interface ProductSellUnitVO {
+  id?: number;
+  specId?: number;
+  name?: string;
+  price?: number | null;
+  originPrice?: number | null;
+  isBase?: number;
+  convertQty?: number;
+  freightQty?: number;
+  status: number;
+  sort?: number;
+}
+
+export interface ProductAttrValueVO {
+  id: number;
+  valueName: string;
+}
+
+export interface ProductAttrVO {
+  attrId: number;
+  attrName?: string;
+  valueIds?: number[];
+  values?: ProductAttrValueVO[];
 }
 
 export interface ProductVO {
@@ -32,7 +62,9 @@ export interface ProductVO {
   festivalIds?: number[];
   festivalPaths?: string[];
   specSummary?: string;
+  attrs?: ProductAttrVO[];
   skus?: ProductSkuVO[];
+  sellUnits?: ProductSellUnitVO[];
   supplierId?: number | null;
   supplierName?: string;
   selfOperated?: boolean;
@@ -40,15 +72,34 @@ export interface ProductVO {
   auditRemark?: string;
 }
 
+export interface ProductAttrPayload {
+  attrId: number;
+  valueIds: number[];
+}
+
 export interface ProductSkuPayload {
-  specId: number;
+  id?: number;
+  attrValueIds: number[];
+  attrText?: string;
   price: number;
   originPrice?: number;
+  stock?: number;
+  coverUrl?: string;
   status?: number;
   sort?: number;
-  isBase?: number;
-  convertQty?: number;
-  freightQty?: number;
+}
+
+export interface ProductSellUnitPayload {
+  id?: number;
+  specId?: number;
+  name?: string;
+  price?: number | null;
+  originPrice?: number | null;
+  isBase: number;
+  convertQty: number;
+  freightQty: number;
+  status?: number;
+  sort?: number;
 }
 
 export interface ProductSavePayload {
@@ -61,9 +112,10 @@ export interface ProductSavePayload {
   status?: number;
   categoryId: number;
   festivalIds?: number[];
-  stock?: number;
   stockAlertQty?: number | null;
+  attrs?: ProductAttrPayload[];
   skus: ProductSkuPayload[];
+  sellUnits: ProductSellUnitPayload[];
   supplierId?: number | null;
 }
 
