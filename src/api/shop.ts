@@ -1,4 +1,4 @@
-import request, { type ApiResult } from "@/utils/request";
+import request, { type ApiResult, type PageResult } from "@/utils/request";
 
 export interface ShopConfigVO {
   csPhone: string;
@@ -100,4 +100,31 @@ export function fetchFreightTemplate() {
 
 export function saveFreightTemplate(data: FreightSavePayload) {
   return request.put<ApiResult<FreightTemplateVO>>("/api/admin/shop/freight", data);
+}
+
+export interface MaintenanceWhitelistVO {
+  id: number;
+  phone: string;
+  memberNo?: string;
+  operatorId?: number;
+  createTime?: string;
+}
+
+export function fetchMaintenanceWhitelist(params?: {
+  phone?: string;
+  pageNum?: number;
+  pageSize?: number;
+}) {
+  return request.get<ApiResult<PageResult<MaintenanceWhitelistVO>>>(
+    "/api/admin/shop/maintenance-whitelist/list",
+    { params },
+  );
+}
+
+export function createMaintenanceWhitelist(data: { phone: string }) {
+  return request.post<ApiResult<MaintenanceWhitelistVO>>("/api/admin/shop/maintenance-whitelist", data);
+}
+
+export function deleteMaintenanceWhitelist(id: number) {
+  return request.delete<ApiResult<null>>(`/api/admin/shop/maintenance-whitelist/${id}`);
 }

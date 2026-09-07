@@ -2,6 +2,7 @@
   <div>
     <el-tabs v-model="tab">
       <el-tab-pane label="客服配置" name="contact" />
+      <el-tab-pane label="维护白名单" name="maintenanceWhitelist" />
       <el-tab-pane label="自营供应商" name="self" />
       <el-tab-pane label="日报推送" name="report" />
       <el-tab-pane label="支付通知" name="paidNotify" />
@@ -43,7 +44,7 @@
         </el-form-item>
         <el-form-item label="维护模式">
           <el-switch v-model="contact.maintenanceEnabled" />
-          <span class="tip">开启后小程序仍可登录并看首页列表，其余接口拦截；开启时首页公告会改为「系统维护中」；开关变更会发站内信</span>
+          <span class="tip">开启后仍可登录并看首页列表，点商品会弹窗提示且不可进详情；加购/下单等接口拦截；白名单手机号登录后可正常访问；开启时首页公告改为「系统维护中」，关闭时若仍是该默认文案会清空；开关变更会发站内信</span>
         </el-form-item>
         <el-form-item label="退货联系人">
           <el-input v-model="contact.returnName" maxlength="64" placeholder="退货退款时展示给用户" />
@@ -65,6 +66,72 @@
           <el-button type="primary" :loading="contactSaving" @click="saveContact">保存</el-button>
         </el-form-item>
       </el-form>
+    </el-card>
+
+    <el-card v-show="tab === 'maintenanceWhitelist'" class="card">
+      <p class="hint">
+        维护模式开启后，未命中白名单的用户点商品会在当前页弹窗提示，无法进入详情/下单；白名单手机号登录后可正常使用。请先在「客服配置」中打开维护模式。
+      </p>
+      <div class="toolbar">
+        <el-input
+          v-model="whitelistQuery.phone"
+          placeholder="手机号"
+          clearable
+          style="width: 180px"
+          @keyup.enter="searchWhitelist"
+        />
+        <el-button type="primary" @click="searchWhitelist">查询</el-button>
+        <el-button
+          v-if="userStore.hasPermission('shop:update')"
+          type="primary"
+          @click="openWhitelistCreate"
+        >
+          添加手机号
+        </el-button>
+        <el-button @click="loadWhitelist">刷新</el-button>
+      </div>
+      <el-table :data="whitelistRows" v-loading="whitelistLoading" border stripe>
+        <el-table-column prop="phone" label="手机号" width="140" />
+        <el-table-column label="已注册用户" min-width="140">
+          <template #default="{ row }">{{ row.memberNo || "-" }}</template>
+        </el-table-column>
+        <el-table-column prop="createTime" label="添加时间" min-width="170" />
+        <el-table-column label="操作" width="120" fixed="right">
+          <template #default="{ row }">
+            <el-button
+              v-if="userStore.hasPermission('shop:update')"
+              link
+              type="danger"
+              @click="onDeleteWhitelist(row)"
+            >
+              移出
+            </el-button>
+          </template>
+        </el-table-column>
+      </el-table>
+      <div class="pager">
+        <el-pagination
+          v-model:current-page="whitelistPageNum"
+          v-model:page-size="whitelistPageSize"
+          :total="whitelistTotal"
+          :page-sizes="[10, 20, 50, 100]"
+          layout="total, sizes, prev, pager, next"
+          background
+          @current-change="loadWhitelist"
+          @size-change="searchWhitelist"
+        />
+      </div>
+      <el-dialog v-model="whitelistVisible" title="添加维护白名单" width="440px" @closed="resetWhitelistForm">
+        <el-form ref="whitelistFormRef" :model="whitelistForm" :rules="whitelistRules" label-width="96px">
+          <el-form-item label="手机号" prop="phone">
+            <el-input v-model="whitelistForm.phone" maxlength="11" placeholder="11位手机号" />
+          </el-form-item>
+        </el-form>
+        <template #footer>
+          <el-button @click="whitelistVisible = false">取消</el-button>
+          <el-button type="primary" :loading="whitelistSaving" @click="onSaveWhitelist">确定</el-button>
+        </template>
+      </el-dialog>
     </el-card>
 
     <el-card v-show="tab === 'self'" v-loading="contactLoading" class="card">
@@ -300,16 +367,22 @@
 </template>
 
 <script setup lang="ts">
-import { onMounted, reactive, ref } from "vue";
-import { ElMessage } from "element-plus";
+import { onMounted, reactive, ref, watch } from "vue";
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
 import {
+  createMaintenanceWhitelist,
+  deleteMaintenanceWhitelist,
   fetchFreightTemplate,
+  fetchMaintenanceWhitelist,
   fetchShopConfig,
   saveFreightTemplate,
   saveShopConfig,
   type FreightRuleVO,
+  type MaintenanceWhitelistVO,
 } from "@/api/shop";
+import { useUserStore } from "@/stores/user";
 
+const userStore = useUserStore();
 const tab = ref("contact");
 const contactLoading = ref(false);
 const contactSaving = ref(false);
@@ -323,6 +396,23 @@ const freightSaving = ref(false);
 const provinceOptions = ref<string[]>([]);
 const approvalHours = ref<number[]>([1, 3, 6]);
 const hourDraft = ref<number | null>(24);
+
+const whitelistLoading = ref(false);
+const whitelistSaving = ref(false);
+const whitelistRows = ref<MaintenanceWhitelistVO[]>([]);
+const whitelistTotal = ref(0);
+const whitelistPageNum = ref(1);
+const whitelistPageSize = ref(10);
+const whitelistQuery = reactive({ phone: "" });
+const whitelistVisible = ref(false);
+const whitelistFormRef = ref<FormInstance>();
+const whitelistForm = reactive({ phone: "" });
+const whitelistRules: FormRules = {
+  phone: [
+    { required: true, message: "请填写手机号", trigger: "blur" },
+    { pattern: /^1\d{10}$/, message: "请填写11位手机号", trigger: "blur" },
+  ],
+};
 
 const contact = reactive({
   csPhone: "",
@@ -626,6 +716,62 @@ async function saveFreight() {
   }
 }
 
+async function loadWhitelist() {
+  whitelistLoading.value = true;
+  try {
+    const { data } = await fetchMaintenanceWhitelist({
+      phone: whitelistQuery.phone || undefined,
+      pageNum: whitelistPageNum.value,
+      pageSize: whitelistPageSize.value,
+    });
+    whitelistRows.value = data.data?.records || [];
+    whitelistTotal.value = data.data?.total || 0;
+  } finally {
+    whitelistLoading.value = false;
+  }
+}
+
+function searchWhitelist() {
+  whitelistPageNum.value = 1;
+  loadWhitelist();
+}
+
+function openWhitelistCreate() {
+  resetWhitelistForm();
+  whitelistVisible.value = true;
+}
+
+function resetWhitelistForm() {
+  whitelistForm.phone = "";
+  whitelistFormRef.value?.clearValidate();
+}
+
+async function onSaveWhitelist() {
+  await whitelistFormRef.value?.validate();
+  whitelistSaving.value = true;
+  try {
+    await createMaintenanceWhitelist({ phone: whitelistForm.phone.trim() });
+    ElMessage.success("已加入白名单");
+    whitelistVisible.value = false;
+    await loadWhitelist();
+  } finally {
+    whitelistSaving.value = false;
+  }
+}
+
+async function onDeleteWhitelist(row: MaintenanceWhitelistVO) {
+  await ElMessageBox.confirm(`确定将 ${row.phone} 移出维护白名单？`, "提示", { type: "warning" });
+  await deleteMaintenanceWhitelist(row.id);
+  ElMessage.success("已移出");
+  await loadWhitelist();
+}
+
+watch(tab, (name) => {
+  if (name === "maintenanceWhitelist") {
+    loadWhitelist();
+  }
+});
+
 onMounted(() => {
   loadContact();
   loadFreight();
@@ -646,6 +792,17 @@ onMounted(() => {
   margin-left: 12px;
   color: #9ca3af;
   font-size: 13px;
+}
+.toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.pager {
+  margin-top: 12px;
+  display: flex;
+  justify-content: flex-end;
 }
 .hours-editor {
   display: flex;
