@@ -70,6 +70,7 @@ export interface FreightRuleVO {
 export interface FreightTemplateVO {
   enabled: boolean;
   freeThreshold?: number | null;
+  commonFreeShipProvinces?: string[];
   defaultRule: FreightRuleVO;
   regionRules: FreightRuleVO[];
   provinceOptions: string[];
@@ -78,6 +79,7 @@ export interface FreightTemplateVO {
 export interface FreightSavePayload {
   enabled: boolean;
   freeThreshold?: number | null;
+  commonFreeShipProvinces?: string[];
   defaultRule: FreightRuleVO;
   regionRules: FreightRuleVO[];
 }

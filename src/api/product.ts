@@ -54,6 +54,11 @@ export interface ProductVO {
   stock?: number;
   stockSummary?: string;
   stockAlertQty?: number | null;
+  freeShipEnabled?: boolean;
+  freeShipMinQty?: number;
+  freeShipProvinces?: string[];
+  commonFreeShipProvinces?: string[];
+  provinceOptions?: string[];
   detailHtml?: string;
   detailImageUrls?: string[];
   status: number;
@@ -113,6 +118,9 @@ export interface ProductSavePayload {
   categoryId: number;
   festivalIds?: number[];
   stockAlertQty?: number | null;
+  freeShipEnabled?: boolean;
+  freeShipMinQty?: number;
+  freeShipProvinces?: string[];
   attrs?: ProductAttrPayload[];
   skus: ProductSkuPayload[];
   sellUnits: ProductSellUnitPayload[];

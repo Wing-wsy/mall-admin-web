@@ -51,11 +51,14 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column prop="payAmount" label="应付" width="120">
+      <el-table-column prop="payAmount" label="应付" width="140">
         <template #default="{ row }">
           <span v-if="row.orderType === 1">{{ row.pointsAmount || 0 }} 积分</span>
           <span v-else-if="row.orderType === 2">兑换券</span>
-          <span v-else>¥{{ row.payAmount }}</span>
+          <span v-else>
+            ¥{{ row.payAmount }}
+            <el-tag v-if="row.payAdjusted" size="small" type="warning" style="margin-left: 4px">已改价</el-tag>
+          </span>
         </template>
       </el-table-column>
       <el-table-column label="支付" width="110">
@@ -70,9 +73,17 @@
       </el-table-column>
       <el-table-column prop="receiverName" label="收货人" width="100" />
       <el-table-column prop="createTime" label="下单时间" min-width="170" />
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
+          <el-button
+            v-if="canAdjustPay(row)"
+            link
+            type="warning"
+            @click="openAdjust(row)"
+          >
+            改价
+          </el-button>
           <el-button v-if="row.status === 20 && !isAfterSaleOpen(row)" link type="primary" @click="onShip(row)">
             发货
           </el-button>
@@ -118,6 +129,17 @@
             <span v-if="detail.orderType === 1">{{ detail.pointsAmount || 0 }} 积分</span>
             <span v-else-if="detail.orderType === 2">兑换券 / ¥0</span>
             <span v-else>¥{{ detail.payAmount }}</span>
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.payAdjusted" label="原应付">
+            ¥{{ detail.originPayAmount }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.payAdjusted" label="改价差额">
+            -¥{{ Number(detail.payAdjustAmount || 0).toFixed(2) }}
+          </el-descriptions-item>
+          <el-descriptions-item v-if="detail.payAdjusted" label="改价原因" :span="2">
+            {{ detail.payAdjustRemark || "-" }}
+            <span v-if="detail.payAdjustByName">（{{ detail.payAdjustByName }}）</span>
+            <span v-if="detail.payAdjustTime"> {{ detail.payAdjustTime }}</span>
           </el-descriptions-item>
           <el-descriptions-item v-if="detail.settleStatus" label="供货抽成">
             {{ Number(detail.commissionRate || 0) }}% / ¥{{ Number(detail.commissionAmount || 0).toFixed(2) }}
@@ -263,6 +285,39 @@
         <el-button type="danger" :loading="refunding" @click="submitRefund">确认退款</el-button>
       </template>
     </el-dialog>
+
+    <el-dialog v-model="adjustVisible" title="修改应付金额" width="440px" @closed="resetAdjust">
+      <p class="hint">
+        订单 {{ adjustRow?.orderNo }} 当前应付 ¥{{ adjustRow?.payAmount }}，仅支持下调一次。
+      </p>
+      <el-form label-width="88px">
+        <el-form-item label="新应付" required>
+          <el-input-number
+            v-model="adjustPayAmount"
+            :min="0.01"
+            :max="Math.max(0.01, Number(adjustRow?.payAmount || 0) - 0.01)"
+            :precision="2"
+            :step="1"
+            controls-position="right"
+            style="width: 100%"
+          />
+        </el-form-item>
+        <el-form-item label="改价原因" required>
+          <el-input
+            v-model="adjustRemark"
+            type="textarea"
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+            placeholder="必填"
+          />
+        </el-form-item>
+      </el-form>
+      <template #footer>
+        <el-button @click="adjustVisible = false">取消</el-button>
+        <el-button type="primary" :loading="adjusting" @click="submitAdjust">确认改价</el-button>
+      </template>
+    </el-dialog>
   </div>
 </template>
 
@@ -276,6 +331,7 @@ import { useUserStore } from "@/stores/user";
 import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 import { directRefund, fetchDirectRefundReasonOptions, type AfterSaleReasonVO } from "@/api/aftersale";
 import {
+  adjustAdminOrderPay,
   cancelAdminOrder,
   fetchAdminOrderDetail,
   fetchAdminOrderExpress,
@@ -316,6 +372,11 @@ const refunding = ref(false);
 const refundRow = ref<AdminOrderVO | null>(null);
 const refundCode = ref("");
 const refundReasons = ref<AfterSaleReasonVO[]>([]);
+const adjustVisible = ref(false);
+const adjusting = ref(false);
+const adjustRow = ref<AdminOrderVO | null>(null);
+const adjustPayAmount = ref<number | undefined>();
+const adjustRemark = ref("");
 const companies = [
   { value: "sf", label: "顺丰速运" },
   { value: "zto", label: "中通快递" },
@@ -466,6 +527,65 @@ function resetRefund() {
   refundRow.value = null;
   refundCode.value = "";
   refundReasons.value = [];
+}
+
+function canAdjustPay(row: AdminOrderVO) {
+  return (
+    row.status === 10 &&
+    row.orderType !== 1 &&
+    row.orderType !== 2 &&
+    !row.payAdjusted &&
+    userStore.hasPermission("order:adjust-pay")
+  );
+}
+
+function openAdjust(row: AdminOrderVO) {
+  adjustRow.value = row;
+  const current = Number(row.payAmount || 0);
+  adjustPayAmount.value = current > 0.01 ? Number((current - 0.01).toFixed(2)) : undefined;
+  adjustRemark.value = "";
+  adjustVisible.value = true;
+}
+
+function resetAdjust() {
+  adjustRow.value = null;
+  adjustPayAmount.value = undefined;
+  adjustRemark.value = "";
+}
+
+async function submitAdjust() {
+  if (!adjustRow.value) {
+    return;
+  }
+  const current = Number(adjustRow.value.payAmount || 0);
+  const next = Number(adjustPayAmount.value);
+  if (!Number.isFinite(next) || next <= 0) {
+    ElMessage.warning("请填写大于 0 的应付金额");
+    return;
+  }
+  if (next >= current) {
+    ElMessage.warning("新应付须小于当前应付");
+    return;
+  }
+  if (!adjustRemark.value.trim()) {
+    ElMessage.warning("请填写改价原因");
+    return;
+  }
+  adjusting.value = true;
+  try {
+    const { data } = await adjustAdminOrderPay(adjustRow.value.id, {
+      payAmount: next,
+      remark: adjustRemark.value.trim(),
+    });
+    ElMessage.success("已改价");
+    adjustVisible.value = false;
+    if (detail.value?.id === adjustRow.value.id && data.data) {
+      detail.value = data.data;
+    }
+    await load();
+  } finally {
+    adjusting.value = false;
+  }
 }
 
 async function submitRefund() {

@@ -46,6 +46,12 @@ export interface AdminOrderVO {
   voucherCodeId?: number;
   voucherCodeMask?: string;
   payAmount: number;
+  originPayAmount?: number;
+  payAdjusted?: boolean;
+  payAdjustAmount?: number;
+  payAdjustRemark?: string;
+  payAdjustTime?: string;
+  payAdjustByName?: string;
   commissionRate?: number | string;
   commissionAmount?: number | string;
   sellerIncome?: number | string;
@@ -104,6 +110,10 @@ export function shipAdminOrder(id: number, data: { expressCompany: string; expre
 
 export function cancelAdminOrder(id: number, reason?: string) {
   return request.post<ApiResult<AdminOrderVO>>(`/api/admin/order/${id}/cancel`, { reason });
+}
+
+export function adjustAdminOrderPay(id: number, data: { payAmount: number; remark: string }) {
+  return request.post<ApiResult<AdminOrderVO>>(`/api/admin/order/${id}/adjust-pay`, data);
 }
 
 export interface AdminExpressTraceVO {

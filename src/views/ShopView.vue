@@ -307,6 +307,20 @@
           <span class="tip">按折后商品金额判断，0 或不填表示不包邮</span>
         </el-form-item>
 
+        <el-form-item label="常用包邮省">
+          <el-select
+            v-model="freight.commonFreeShipProvinces"
+            multiple
+            filterable
+            clearable
+            placeholder="选择常用包邮省份"
+            class="province-select"
+          >
+            <el-option v-for="name in provinceOptions" :key="name" :label="name" :value="name" />
+          </el-select>
+          <span class="tip">供商品编辑一键填入；不自动变更已有商品</span>
+        </el-form-item>
+
         <el-form-item label="默认运费" required>
           <div class="rule-row">
             <span>首</span>
@@ -479,6 +493,7 @@ function emptyRule(): FreightRuleVO {
 const freight = reactive({
   enabled: false,
   freeThreshold: null as number | null,
+  commonFreeShipProvinces: [] as string[],
   defaultRule: emptyRule(),
   regionRules: [] as FreightRuleVO[],
 });
@@ -654,12 +669,14 @@ async function saveApprovalNotify() {
 function applyFreight(vo?: {
   enabled?: boolean;
   freeThreshold?: number | null;
+  commonFreeShipProvinces?: string[];
   defaultRule?: FreightRuleVO;
   regionRules?: FreightRuleVO[];
   provinceOptions?: string[];
 }) {
   freight.enabled = !!vo?.enabled;
   freight.freeThreshold = vo?.freeThreshold == null ? null : Number(vo.freeThreshold);
+  freight.commonFreeShipProvinces = [...(vo?.commonFreeShipProvinces || [])];
   freight.defaultRule = {
     ...emptyRule(),
     ...(vo?.defaultRule || {}),
@@ -692,6 +709,7 @@ async function saveFreight() {
     const { data } = await saveFreightTemplate({
       enabled: freight.enabled,
       freeThreshold: threshold == null || threshold === 0 ? null : threshold,
+      commonFreeShipProvinces: freight.commonFreeShipProvinces,
       defaultRule: {
         provinces: [],
         firstQty: freight.defaultRule.firstQty,

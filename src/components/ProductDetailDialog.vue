@@ -39,6 +39,17 @@
         <el-descriptions-item label="告警库存">
           {{ detail.stockAlertQty != null ? detail.stockAlertQty : "未设置" }}
         </el-descriptions-item>
+        <el-descriptions-item label="商品包邮" :span="2">
+          <template v-if="detail.freeShipEnabled">
+            满 {{ detail.freeShipMinQty || 1 }} 库存单位；
+            {{
+              detail.freeShipProvinces?.length
+                ? detail.freeShipProvinces.join("、")
+                : "全国"
+            }}
+          </template>
+          <template v-else>未启用</template>
+        </el-descriptions-item>
         <el-descriptions-item label="节日分类">
           {{ detail.festivalPaths?.length ? detail.festivalPaths.join("；") : "无" }}
         </el-descriptions-item>

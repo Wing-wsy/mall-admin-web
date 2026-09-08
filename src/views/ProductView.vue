@@ -211,6 +211,45 @@
           <span class="tip">低于该值告警；不填则不告警</span>
         </el-form-item>
 
+        <el-form-item label="商品包邮">
+          <div class="free-ship-block">
+            <el-switch v-model="form.freeShipEnabled" />
+            <template v-if="form.freeShipEnabled">
+              <span>满</span>
+              <el-input-number
+                v-model="form.freeShipMinQty"
+                class="num-qty"
+                controls-position="right"
+                :min="1"
+                :step="1"
+                :precision="0"
+              />
+              <span>{{ baseUnitName || "库存单位" }}</span>
+              <el-select
+                v-model="form.freeShipProvinces"
+                multiple
+                filterable
+                clearable
+                collapse-tags
+                collapse-tags-tooltip
+                placeholder="空=全国包邮"
+                class="province-select"
+              >
+                <el-option
+                  v-for="name in provinceOptions"
+                  :key="name"
+                  :label="name"
+                  :value="name"
+                />
+              </el-select>
+              <el-button @click="fillCommonFreeShipProvinces">填入常用包邮省份</el-button>
+            </template>
+            <div class="tip">
+              按库存单位件数累计（如 1 箱=12 件则买 1 箱计 12）。省份不选表示全国；未命中走店铺运费。
+            </div>
+          </div>
+        </el-form-item>
+
         <el-form-item label="销售属性">
           <div class="sku-block">
             <el-select
@@ -472,6 +511,7 @@ import {
 } from "@/api/product";
 import { fetchSaleAttrList, type SaleAttrVO } from "@/api/saleAttr";
 import { fetchSpecList, type SpecVO } from "@/api/spec";
+import { fetchFreightTemplate } from "@/api/shop";
 import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 
 interface SkuRow {
@@ -570,10 +610,16 @@ const form = reactive({
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
   stockAlertQty: undefined as number | undefined,
+  freeShipEnabled: false,
+  freeShipMinQty: 1,
+  freeShipProvinces: [] as string[],
   supplierId: 0 as number,
   skus: [] as SkuRow[],
   sellUnits: [] as SellUnitRow[],
 });
+
+const provinceOptions = ref<string[]>([]);
+const commonFreeShipProvinces = ref<string[]>([]);
 
 const saleAttrOptions = computed(() => saleAttrs.value);
 
@@ -911,6 +957,9 @@ function resetForm() {
   form.categoryId = undefined;
   form.festivalIds = [];
   form.stockAlertQty = undefined;
+  form.freeShipEnabled = false;
+  form.freeShipMinQty = 1;
+  form.freeShipProvinces = [];
   form.supplierId = userStore.isSupplier
     ? (supplierOptions.value.length === 1 ? supplierOptions.value[0].id : (undefined as unknown as number))
     : 0;
@@ -927,9 +976,42 @@ function openDetail(row: ProductVO) {
   detailVisible.value = true;
 }
 
+async function loadFreeShipMeta(detail?: ProductVO) {
+  if (detail) {
+    if (detail.provinceOptions?.length) {
+      provinceOptions.value = [...detail.provinceOptions];
+    }
+    commonFreeShipProvinces.value = [...(detail.commonFreeShipProvinces || [])];
+  }
+  if (provinceOptions.value.length && detail) {
+    return;
+  }
+  try {
+    const { data } = await fetchFreightTemplate();
+    if (!provinceOptions.value.length) {
+      provinceOptions.value = [...(data.data?.provinceOptions || [])];
+    }
+    if (!detail) {
+      commonFreeShipProvinces.value = [...(data.data?.commonFreeShipProvinces || [])];
+    }
+  } catch {
+    // supplier may lack shop:get; edit still gets options from product detail
+  }
+}
+
+function fillCommonFreeShipProvinces() {
+  if (!commonFreeShipProvinces.value.length) {
+    ElMessage.warning("请先在店铺运费中配置常用包邮省份");
+    return;
+  }
+  form.freeShipProvinces = [...commonFreeShipProvinces.value];
+  ElMessage.success("已填入常用包邮省份");
+}
+
 async function openCreate() {
   await loadTrees();
   resetForm();
+  await loadFreeShipMeta();
   visible.value = true;
 }
 
@@ -937,6 +1019,7 @@ async function openEdit(row: ProductVO) {
   await loadTrees();
   const { data } = await fetchProductDetail(row.id);
   const detail = data.data || row;
+  await loadFreeShipMeta(detail);
   form.id = detail.id;
   form.name = detail.name;
   form.subtitle = detail.subtitle || "";
@@ -952,6 +1035,9 @@ async function openEdit(row: ProductVO) {
   form.categoryId = detail.categoryId;
   form.festivalIds = [...(detail.festivalIds || [])];
   form.stockAlertQty = detail.stockAlertQty ?? undefined;
+  form.freeShipEnabled = !!detail.freeShipEnabled;
+  form.freeShipMinQty = detail.freeShipMinQty && detail.freeShipMinQty > 0 ? detail.freeShipMinQty : 1;
+  form.freeShipProvinces = [...(detail.freeShipProvinces || [])];
   form.supplierId = detail.supplierId ?? 0;
 
   clearAttrSelection();
@@ -1096,6 +1182,10 @@ async function save() {
     ElMessage.warning("告警库存不能为负数");
     return;
   }
+  if (form.freeShipEnabled && (!form.freeShipMinQty || form.freeShipMinQty < 1)) {
+    ElMessage.warning("包邮门槛件数至少为1");
+    return;
+  }
   if (userStore.isSupplier && !form.supplierId) {
     ElMessage.warning("请选择归属供应商");
     return;
@@ -1114,6 +1204,9 @@ async function save() {
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
       stockAlertQty: form.stockAlertQty ?? null,
+      freeShipEnabled: form.freeShipEnabled,
+      freeShipMinQty: form.freeShipEnabled ? form.freeShipMinQty : 1,
+      freeShipProvinces: form.freeShipEnabled ? [...form.freeShipProvinces] : [],
       attrs: selectedAttrIds.value.map((attrId) => ({
         attrId,
         valueIds: [...(attrValueMap[attrId] || [])],
@@ -1240,6 +1333,24 @@ onMounted(async () => {
   margin-left: 8px;
   color: #9ca3af;
   font-size: 12px;
+}
+.free-ship-block {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
+}
+.free-ship-block .tip {
+  margin-left: 0;
+  width: 100%;
+}
+.num-qty {
+  width: 110px;
+}
+.province-select {
+  min-width: 280px;
+  flex: 1;
 }
 .muted {
   color: #9ca3af;
