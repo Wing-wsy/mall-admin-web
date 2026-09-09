@@ -21,7 +21,9 @@
         </template>
       </el-table-column>
       <el-table-column prop="name" label="套装" min-width="160" />
-      <el-table-column prop="price" label="售价" width="90" />
+      <el-table-column label="售价" width="90">
+        <template #default="{ row }">￥{{ row.price }}</template>
+      </el-table-column>
       <el-table-column prop="itemCount" label="组成数" width="80" />
       <el-table-column prop="sort" label="排序" width="70" />
       <el-table-column label="状态" width="90">
@@ -33,9 +35,15 @@
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
           <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link type="primary" @click="toggleStatus(row)">
-            {{ row.status === 1 ? "下架" : "上架" }}
+          <el-button
+            v-if="row.status === 1"
+            link
+            type="danger"
+            @click="toggleStatus(row)"
+          >
+            下架
           </el-button>
+          <el-button v-else link type="success" @click="toggleStatus(row)">上架</el-button>
         </template>
       </el-table-column>
     </el-table>
@@ -384,9 +392,14 @@ async function save() {
 
 async function toggleStatus(row: ComboVO) {
   const next = row.status === 1 ? 0 : 1;
-  await ElMessageBox.confirm(next === 1 ? "确认上架该套装？" : "确认下架该套装？", "提示");
+  const action = next === 1 ? "上架" : "下架";
+  await ElMessageBox.confirm(`确认${action}套装「${row.name}」？`, "提示", {
+    type: "warning",
+    confirmButtonText: `确认${action}`,
+    cancelButtonText: "取消",
+  });
   await updateComboStatus(row.id, next);
-  ElMessage.success("已更新");
+  ElMessage.success(next === 1 ? "已上架" : "已下架");
   load();
 }
 

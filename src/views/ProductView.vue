@@ -80,8 +80,14 @@
           <span v-else class="muted">无</span>
         </template>
       </el-table-column>
-      <el-table-column prop="price" label="现价" width="100" />
-      <el-table-column prop="originPrice" label="原价" width="100" />
+      <el-table-column label="现价" width="100">
+        <template #default="{ row }">￥{{ row.price }}</template>
+      </el-table-column>
+      <el-table-column label="原价" width="100">
+        <template #default="{ row }">
+          {{ row.originPrice != null ? `￥${row.originPrice}` : "-" }}
+        </template>
+      </el-table-column>
       <el-table-column label="发货方" min-width="120">
         <template #default="{ row }">
           <el-tag v-if="row.selfOperated" type="danger" effect="plain">{{ row.supplierName || "自营" }}</el-tag>
@@ -100,8 +106,10 @@
         <template #default="{ row }">
           <el-button link type="primary" @click="openDetail(row)">详情</el-button>
           <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 1" link @click="toggleStatus(row, 0)">下架</el-button>
-          <el-button v-if="row.status === 0 || row.status === 3" link @click="toggleStatus(row, 1)">上架</el-button>
+          <el-button v-if="row.status === 1" link type="danger" @click="toggleStatus(row, 0)">下架</el-button>
+          <el-button v-if="row.status === 0 || row.status === 3" link type="success" @click="toggleStatus(row, 1)">
+            上架
+          </el-button>
           <el-button
             v-if="row.status === 2 && userStore.hasPermission('product:approve')"
             link
@@ -1249,6 +1257,12 @@ async function save() {
 }
 
 async function toggleStatus(row: ProductVO, next: number) {
+  const action = next === 1 ? "上架" : "下架";
+  await ElMessageBox.confirm(`确认${action}商品「${row.name}」？`, "提示", {
+    type: "warning",
+    confirmButtonText: `确认${action}`,
+    cancelButtonText: "取消",
+  });
   await updateProductStatus(row.id, next);
   ElMessage.success(next === 1 ? "已上架" : "已下架");
   await load();
