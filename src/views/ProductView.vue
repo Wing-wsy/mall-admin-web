@@ -218,6 +218,16 @@
           <el-button link type="primary" @click="form.stockAlertQty = undefined">清除</el-button>
           <span class="tip">低于该值告警；不填则不告警</span>
         </el-form-item>
+        <el-form-item label="起订量">
+          <el-input-number
+            v-model="form.minOrderQty"
+            controls-position="right"
+            :min="1"
+            :step="1"
+            :precision="0"
+          />
+          <span class="tip">按库存单位件数；用户购买数量×换算 ≥ 起订量才可下单，默认 1</span>
+        </el-form-item>
 
         <el-form-item label="商品包邮">
           <div class="free-ship-block">
@@ -618,6 +628,7 @@ const form = reactive({
   categoryId: undefined as number | undefined,
   festivalIds: [] as number[],
   stockAlertQty: undefined as number | undefined,
+  minOrderQty: 1,
   freeShipEnabled: false,
   freeShipMinQty: 1,
   freeShipProvinces: [] as string[],
@@ -965,6 +976,7 @@ function resetForm() {
   form.categoryId = undefined;
   form.festivalIds = [];
   form.stockAlertQty = undefined;
+  form.minOrderQty = 1;
   form.freeShipEnabled = false;
   form.freeShipMinQty = 1;
   form.freeShipProvinces = [];
@@ -1043,6 +1055,7 @@ async function openEdit(row: ProductVO) {
   form.categoryId = detail.categoryId;
   form.festivalIds = [...(detail.festivalIds || [])];
   form.stockAlertQty = detail.stockAlertQty ?? undefined;
+  form.minOrderQty = detail.minOrderQty && detail.minOrderQty > 0 ? detail.minOrderQty : 1;
   form.freeShipEnabled = !!detail.freeShipEnabled;
   form.freeShipMinQty = detail.freeShipMinQty && detail.freeShipMinQty > 0 ? detail.freeShipMinQty : 1;
   form.freeShipProvinces = [...(detail.freeShipProvinces || [])];
@@ -1190,6 +1203,10 @@ async function save() {
     ElMessage.warning("告警库存不能为负数");
     return;
   }
+  if (!form.minOrderQty || form.minOrderQty < 1) {
+    ElMessage.warning("起订量至少为1");
+    return;
+  }
   if (form.freeShipEnabled && (!form.freeShipMinQty || form.freeShipMinQty < 1)) {
     ElMessage.warning("包邮门槛件数至少为1");
     return;
@@ -1212,6 +1229,7 @@ async function save() {
       categoryId: form.categoryId,
       festivalIds: form.festivalIds,
       stockAlertQty: form.stockAlertQty ?? null,
+      minOrderQty: form.minOrderQty,
       freeShipEnabled: form.freeShipEnabled,
       freeShipMinQty: form.freeShipEnabled ? form.freeShipMinQty : 1,
       freeShipProvinces: form.freeShipEnabled ? [...form.freeShipProvinces] : [],

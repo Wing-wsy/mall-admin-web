@@ -39,6 +39,9 @@
         <el-descriptions-item label="告警库存">
           {{ detail.stockAlertQty != null ? detail.stockAlertQty : "未设置" }}
         </el-descriptions-item>
+        <el-descriptions-item label="起订量">
+          {{ detail.minOrderQty && detail.minOrderQty > 0 ? detail.minOrderQty : 1 }} 库存单位
+        </el-descriptions-item>
         <el-descriptions-item label="商品包邮" :span="2">
           <template v-if="detail.freeShipEnabled">
             满 {{ detail.freeShipMinQty || 1 }} 库存单位；

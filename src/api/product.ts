@@ -54,6 +54,7 @@ export interface ProductVO {
   stock?: number;
   stockSummary?: string;
   stockAlertQty?: number | null;
+  minOrderQty?: number;
   freeShipEnabled?: boolean;
   freeShipMinQty?: number;
   freeShipProvinces?: string[];
@@ -118,6 +119,7 @@ export interface ProductSavePayload {
   categoryId: number;
   festivalIds?: number[];
   stockAlertQty?: number | null;
+  minOrderQty?: number;
   freeShipEnabled?: boolean;
   freeShipMinQty?: number;
   freeShipProvinces?: string[];
