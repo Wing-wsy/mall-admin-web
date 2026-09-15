@@ -136,6 +136,12 @@ const router = createRouter({
           meta: { title: "售卖单位", permission: "spec" },
         },
         {
+          path: "brands",
+          name: "brands",
+          component: () => import("@/views/BrandView.vue"),
+          meta: { title: "品牌管理", permission: "brand" },
+        },
+        {
           path: "banners",
           name: "banners",
           component: () => import("@/views/BannerView.vue"),

@@ -12,6 +12,7 @@
         <el-descriptions-item label="名称" :span="2">{{ detail.name }}</el-descriptions-item>
         <el-descriptions-item label="副标题" :span="2">{{ detail.subtitle || "-" }}</el-descriptions-item>
         <el-descriptions-item label="商品分类">{{ detail.categoryPath || "-" }}</el-descriptions-item>
+        <el-descriptions-item v-if="detail.brandName" label="品牌">{{ detail.brandName }}</el-descriptions-item>
         <el-descriptions-item label="所属供应商">
           <el-button
             v-if="detail.selfOperated || !detail.supplierId"

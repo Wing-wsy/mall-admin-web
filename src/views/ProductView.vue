@@ -45,6 +45,10 @@
         <el-option label="自营" :value="0" />
         <el-option v-for="s in supplierOptions" :key="s.id" :label="s.name" :value="s.id" />
       </el-select>
+      <el-select v-model="query.brandId" clearable filterable placeholder="品牌" style="width: 140px">
+        <el-option label="无品牌" :value="0" />
+        <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id" />
+      </el-select>
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
@@ -63,6 +67,9 @@
       </el-table-column>
       <el-table-column prop="name" label="名称" min-width="160" />
       <el-table-column prop="categoryPath" label="商品分类" min-width="140" />
+      <el-table-column prop="brandName" label="品牌" min-width="100">
+        <template #default="{ row }">{{ row.brandName || "—" }}</template>
+      </el-table-column>
       <el-table-column label="属性/单位" min-width="140">
         <template #default="{ row }">
           <span v-if="row.specSummary">{{ row.specSummary }}</span>
@@ -164,6 +171,17 @@
             placeholder="选择末级分类"
             style="width: 100%"
           />
+        </el-form-item>
+        <el-form-item label="品牌">
+          <el-select
+            v-model="form.brandId"
+            clearable
+            filterable
+            placeholder="可选，不选则不展示品牌"
+            style="width: 100%"
+          >
+            <el-option v-for="b in brandFormOptions" :key="b.id" :label="b.name" :value="b.id" />
+          </el-select>
         </el-form-item>
         <el-form-item label="节日分类">
           <el-cascader
@@ -529,6 +547,7 @@ import {
 } from "@/api/product";
 import { fetchSaleAttrList, type SaleAttrVO } from "@/api/saleAttr";
 import { fetchSpecList, type SpecVO } from "@/api/spec";
+import { fetchBrandOptions, type BrandOptionVO } from "@/api/brand";
 import { fetchFreightTemplate } from "@/api/shop";
 import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 
@@ -599,6 +618,8 @@ const filterFestivalTree = ref<TreeOption[]>([]);
 const specs = ref<SpecVO[]>([]);
 const saleAttrs = ref<SaleAttrVO[]>([]);
 const supplierOptions = ref<AdminSupplierVO[]>([]);
+const brandOptions = ref<BrandOptionVO[]>([]);
+const brandFormOptions = ref<BrandOptionVO[]>([]);
 const loading = ref(false);
 const visible = ref(false);
 const detailVisible = ref(false);
@@ -614,6 +635,7 @@ const query = reactive({
   festivalId: undefined as number | undefined,
   status: undefined as number | undefined,
   supplierId: undefined as number | undefined,
+  brandId: undefined as number | undefined,
 });
 
 const form = reactive({
@@ -626,6 +648,7 @@ const form = reactive({
   detailImageUrls: [] as string[],
   status: 1,
   categoryId: undefined as number | undefined,
+  brandId: undefined as number | undefined,
   festivalIds: [] as number[],
   stockAlertQty: undefined as number | undefined,
   minOrderQty: 1,
@@ -735,6 +758,14 @@ async function loadTrees() {
     supplierOptions.value = sup.data.data || [];
   } catch {
     supplierOptions.value = [];
+  }
+  try {
+    const b = await fetchBrandOptions();
+    brandOptions.value = b.data.data || [];
+    brandFormOptions.value = [...brandOptions.value];
+  } catch {
+    brandOptions.value = [];
+    brandFormOptions.value = [];
   }
 }
 
@@ -933,6 +964,7 @@ async function load() {
       festivalId: query.festivalId,
       status: query.status,
       supplierId: query.supplierId,
+      brandId: query.brandId,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
     });
@@ -954,6 +986,7 @@ function resetQuery() {
   query.festivalId = undefined;
   query.status = undefined;
   query.supplierId = undefined;
+  query.brandId = undefined;
   search();
 }
 
@@ -974,6 +1007,7 @@ function resetForm() {
   form.detailImageUrls = [];
   form.status = 1;
   form.categoryId = undefined;
+  form.brandId = undefined;
   form.festivalIds = [];
   form.stockAlertQty = undefined;
   form.minOrderQty = 1;
@@ -1053,6 +1087,10 @@ async function openEdit(row: ProductVO) {
   form.detailImageUrls = [...(detail.detailImageUrls || [])];
   form.status = detail.status;
   form.categoryId = detail.categoryId;
+  form.brandId = detail.brandId ?? undefined;
+  if (detail.brandId && detail.brandName && !brandFormOptions.value.some((b) => b.id === detail.brandId)) {
+    brandFormOptions.value = [{ id: detail.brandId, name: detail.brandName }, ...brandFormOptions.value];
+  }
   form.festivalIds = [...(detail.festivalIds || [])];
   form.stockAlertQty = detail.stockAlertQty ?? undefined;
   form.minOrderQty = detail.minOrderQty && detail.minOrderQty > 0 ? detail.minOrderQty : 1;
@@ -1227,6 +1265,7 @@ async function save() {
       status: form.status,
       supplierId: form.supplierId || null,
       categoryId: form.categoryId,
+      brandId: form.brandId ?? null,
       festivalIds: form.festivalIds,
       stockAlertQty: form.stockAlertQty ?? null,
       minOrderQty: form.minOrderQty,

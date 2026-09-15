@@ -65,6 +65,8 @@ export interface ProductVO {
   status: number;
   categoryId: number;
   categoryPath?: string;
+  brandId?: number | null;
+  brandName?: string;
   festivalIds?: number[];
   festivalPaths?: string[];
   specSummary?: string;
@@ -117,6 +119,7 @@ export interface ProductSavePayload {
   detailImageUrls?: string[];
   status?: number;
   categoryId: number;
+  brandId?: number | null;
   festivalIds?: number[];
   stockAlertQty?: number | null;
   minOrderQty?: number;
@@ -135,6 +138,7 @@ export interface ProductQuery {
   festivalId?: number;
   status?: number;
   supplierId?: number;
+  brandId?: number;
   pageNum?: number;
   pageSize?: number;
 }
