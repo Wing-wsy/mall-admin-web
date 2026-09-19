@@ -348,13 +348,13 @@ onBeforeUnmount(() => {
   border: 1px solid #eef2f7;
 }
 .kpi-card.accent {
-  background: linear-gradient(145deg, #1d4ed8 0%, #2563eb 55%, #3b82f6 100%);
-  border: none;
-  color: #fff;
+  background: #e6f4ff;
+  border-color: #bae0ff;
+  color: #2563eb;
 }
 .kpi-card.accent .kpi-label,
 .kpi-card.accent .kpi-meta {
-  color: rgba(255, 255, 255, 0.78);
+  color: #2563eb;
 }
 .kpi-label {
   font-size: 13px;
@@ -368,7 +368,7 @@ onBeforeUnmount(() => {
   color: #111827;
 }
 .kpi-card.accent .kpi-value {
-  color: #fff;
+  color: #2563eb;
 }
 .kpi-meta {
   margin-top: 8px;
@@ -383,10 +383,11 @@ onBeforeUnmount(() => {
 .kpi-meta.muted {
   color: #9ca3af;
 }
-.kpi-card.accent .kpi-meta.up,
-.kpi-card.accent .kpi-meta.down,
-.kpi-card.accent .kpi-meta.muted {
-  color: rgba(255, 255, 255, 0.85);
+.kpi-card.accent .kpi-meta.up {
+  color: #059669;
+}
+.kpi-card.accent .kpi-meta.down {
+  color: #dc2626;
 }
 .todo-row {
   display: grid;
