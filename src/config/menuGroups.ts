@@ -8,6 +8,49 @@ export const MENU_GROUPS: { code: string; name: string; childCodes: string[] }[]
   { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog", "system:cache"] },
 ];
 
+const MENU_ICONS: Record<string, string> = {
+  dashboard: "dashboard",
+  goods: "shopping",
+  product: "shopping",
+  combo: "nested",
+  category: "tree",
+  festival: "date",
+  "sale-attr": "list",
+  spec: "size",
+  brand: "star",
+  marketing: "star",
+  banner: "example",
+  nav: "guide",
+  hot: "chart",
+  iconset: "icon",
+  theme: "theme",
+  coupon: "skill",
+  point: "star",
+  voucher: "documentation",
+  trade: "money",
+  order: "form",
+  aftersale: "edit",
+  commission: "money",
+  balance: "chart",
+  "order-review": "message",
+  ums: "peoples",
+  member: "user",
+  level: "peoples",
+  blacklist: "phone",
+  supplier: "build",
+  "system:tenant": "tree-table",
+  system: "system",
+  shop: "shopping",
+  "system:user": "user",
+  "system:role": "peoples",
+  "system:operlog": "log",
+  "system:cache": "server",
+};
+
+export function menuIcon(code: string) {
+  return MENU_ICONS[code] || "";
+}
+
 const MENU_TITLES: Record<string, string> = {
   dashboard: "工作台",
   goods: "商品",

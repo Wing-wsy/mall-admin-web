@@ -6,21 +6,26 @@
         <el-menu
           :default-active="active"
           router
-          background-color="#111827"
-          text-color="#ffffff"
-          active-text-color="#ffffff"
+          background-color="#ffffff"
+          text-color="rgba(0, 0, 0, 0.65)"
+          active-text-color="#2563eb"
         >
           <el-menu-item v-if="dashboardItem?.path" :index="dashboardItem.path">
-            {{ dashboardItem.name }}
+            <MenuIcon :name="menuIcon(dashboardItem.code)" />
+            <span>{{ dashboardItem.name }}</span>
           </el-menu-item>
           <el-sub-menu v-for="group in groupMenus" :key="group.code" :index="group.code">
-            <template #title>{{ group.name }}</template>
+            <template #title>
+              <MenuIcon :name="menuIcon(group.code)" />
+              <span>{{ group.name }}</span>
+            </template>
             <el-menu-item
               v-for="child in group.children"
               :key="child.path"
               :index="child.path!"
             >
-              {{ child.name }}
+              <MenuIcon :name="menuIcon(child.code)" />
+              <span>{{ child.name }}</span>
             </el-menu-item>
           </el-sub-menu>
           <el-menu-item
@@ -28,7 +33,8 @@
             :key="item.path"
             :index="item.path!"
           >
-            {{ item.name }}
+            <MenuIcon :name="menuIcon(item.code)" />
+            <span>{{ item.name }}</span>
           </el-menu-item>
         </el-menu>
       </div>
@@ -134,7 +140,8 @@ import {
   markInboxRead,
   type AdminMessage,
 } from "@/api/inbox";
-import { buildSidebarMenus } from "@/config/menuGroups";
+import MenuIcon from "@/components/MenuIcon.vue";
+import { buildSidebarMenus, menuIcon } from "@/config/menuGroups";
 import { useTabStore } from "@/stores/tabs";
 import { useUserStore } from "@/stores/user";
 
@@ -319,8 +326,9 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #111827;
-  color: #fff;
+  background: #fff;
+  color: #111827;
+  border-right: 1px solid #e5e7eb;
 }
 .brand {
   flex-shrink: 0;
@@ -346,31 +354,43 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   border-right: none;
   background: transparent;
   --el-menu-bg-color: transparent;
-  --el-menu-text-color: #ffffff;
-  --el-menu-hover-text-color: #ffffff;
-  --el-menu-hover-bg-color: rgba(255, 255, 255, 0.16);
-  --el-menu-active-color: #ffffff;
+  --el-menu-text-color: rgba(0, 0, 0, 0.65);
+  --el-menu-hover-text-color: rgba(0, 0, 0, 0.88);
+  --el-menu-hover-bg-color: #f5f5f5;
+  --el-menu-active-color: #2563eb;
 }
 .aside :deep(.el-menu-item),
 .aside :deep(.el-sub-menu__title) {
-  color: #ffffff !important;
-  font-weight: 600;
+  color: rgba(0, 0, 0, 0.65) !important;
+  font-weight: 400;
 }
 .aside :deep(.el-menu-item:hover),
 .aside :deep(.el-sub-menu__title:hover) {
-  background: rgba(255, 255, 255, 0.16) !important;
-  color: #ffffff !important;
+  background: #f5f5f5 !important;
+  color: rgba(0, 0, 0, 0.88) !important;
+}
+.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
+  color: #2563eb !important;
+  background: transparent !important;
 }
 .aside :deep(.el-menu-item.is-active) {
-  background: #2563eb !important;
-  color: #ffffff !important;
+  background: #e6f4ff !important;
+  color: #2563eb !important;
+  box-shadow: inset -3px 0 0 #2563eb;
+}
+.aside :deep(.el-menu-item.is-active:hover) {
+  background: #e6f4ff !important;
+  color: #2563eb !important;
 }
 .aside :deep(.el-sub-menu .el-menu-item) {
   padding-left: 40px !important;
-  font-weight: 500;
+  font-weight: 400;
 }
 .aside :deep(.el-sub-menu__icon-arrow) {
-  color: #9ca3af;
+  color: rgba(0, 0, 0, 0.45);
+}
+.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title .el-sub-menu__icon-arrow) {
+  color: #2563eb;
 }
 .main-wrap {
   height: 100%;

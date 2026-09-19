@@ -1,6 +1,6 @@
 <template>
   <div class="login-page">
-    <el-card class="login-card">
+    <el-card class="login-card" shadow="never">
       <h2>Mall Admin</h2>
       <p class="hint">多商户入驻 · 试用 admin / merchant / ops（密码均为 admin123）</p>
       <el-form @submit.prevent>
@@ -58,15 +58,29 @@ async function onLogin() {
   min-height: 100vh;
   display: grid;
   place-items: center;
-  background: linear-gradient(160deg, #0f172a, #1e293b 45%, #334155);
+  background: #f3f4f6 url("../assets/login-bg.jpg") center / cover no-repeat;
 }
 .login-card {
-  width: 420px;
+  width: 400px;
+  border: none;
+  border-radius: 8px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.16);
+}
+.login-card :deep(.el-card__body) {
+  padding: 28px 28px 22px;
+}
+h2 {
+  margin: 0 0 12px;
+  text-align: center;
+  font-size: 22px;
+  font-weight: 500;
+  color: #303133;
 }
 .hint {
   color: #6b7280;
-  margin-top: -8px;
+  margin-top: 0;
   margin-bottom: 20px;
   font-size: 13px;
+  text-align: center;
 }
 </style>
