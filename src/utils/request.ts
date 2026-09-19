@@ -64,7 +64,9 @@ request.interceptors.response.use(
     return response;
   },
   (error) => {
-    ElMessage.error(error?.response?.data?.message || error?.message || "网络异常");
+    if (!error?.config?.skipErrorMessage) {
+      ElMessage.error(error?.response?.data?.message || error?.message || "网络异常");
+    }
     return Promise.reject(error);
   }
 );

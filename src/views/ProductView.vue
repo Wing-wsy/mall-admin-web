@@ -213,14 +213,16 @@
             </div>
             <el-upload
               v-if="form.galleryUrls.length < 9"
+              multiple
+              :disabled="imageUploading.gallery"
               :show-file-list="false"
-              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.galleryUrls, 9)"
+              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.galleryUrls, 9, 'gallery')"
               accept="image/*"
             >
-              <el-button>上传</el-button>
+              <el-button :loading="imageUploading.gallery">批量上传</el-button>
             </el-upload>
           </div>
-          <div class="tip">建议 1:1（1200×1200），最多 9 张；第一张作为列表封面</div>
+          <div class="tip">建议 1:1（1200×1200），最多 9 张，可一次选择多张；第一张作为列表封面</div>
         </el-form-item>
         <el-form-item label="现价">
           <span v-if="displayPrice != null" class="price-preview">¥{{ displayPrice }}</span>
@@ -495,14 +497,16 @@
             </div>
             <el-upload
               v-if="form.detailImageUrls.length < 20"
+              multiple
+              :disabled="imageUploading.detail"
               :show-file-list="false"
-              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.detailImageUrls, 20)"
+              :http-request="(opt: UploadRequestOptions) => onUpload(opt, form.detailImageUrls, 20, 'detail')"
               accept="image/*"
             >
-              <el-button>上传</el-button>
+              <el-button :loading="imageUploading.detail">批量上传</el-button>
             </el-upload>
           </div>
-          <div class="tip">详情长图，宽 750～1200，最多 20 张</div>
+          <div class="tip">详情长图，宽 750～1200，最多 20 张，可一次选择多张</div>
         </el-form-item>
         <el-form-item v-if="!userStore.isSupplier" label="状态">
           <el-radio-group v-model="form.status">
@@ -625,6 +629,7 @@ const visible = ref(false);
 const detailVisible = ref(false);
 const detailId = ref<number>();
 const saving = ref(false);
+const imageUploading = reactive({ gallery: false, detail: false });
 
 const selectedAttrIds = ref<number[]>([]);
 const attrValueMap = reactive<Record<number, number[]>>({});
@@ -1169,14 +1174,97 @@ function moveUrl(list: string[], index: number, delta: number) {
   list[next] = current;
 }
 
-async function onUpload(options: UploadRequestOptions, list: string[], max: number) {
-  if (list.length >= max) {
-    ElMessage.warning(`最多上传 ${max} 张`);
-    return;
+type ImageUploadKey = "gallery" | "detail";
+
+type QueuedImage = {
+  file: File;
+  resolve: (value?: unknown) => void;
+};
+
+const imageUploadQueues = new WeakMap<
+  string[],
+  { max: number; key: ImageUploadKey; files: QueuedImage[] }
+>();
+const imageUploadTails = new WeakMap<string[], Promise<void>>();
+
+function onUpload(options: UploadRequestOptions, list: string[], max: number, key: ImageUploadKey) {
+  return new Promise((resolve) => {
+    let queue = imageUploadQueues.get(list);
+    if (!queue) {
+      queue = { max, key, files: [] };
+      imageUploadQueues.set(list, queue);
+      queueMicrotask(() => {
+        const current = imageUploadQueues.get(list);
+        imageUploadQueues.delete(list);
+        if (current) {
+          void flushImageUploads(list, current);
+        }
+      });
+    }
+    queue.files.push({ file: options.file as File, resolve });
+  });
+}
+
+async function flushImageUploads(
+  list: string[],
+  batch: { max: number; key: ImageUploadKey; files: QueuedImage[] },
+) {
+  const prev = imageUploadTails.get(list) ?? Promise.resolve();
+  let release!: () => void;
+  const gate = new Promise<void>((resolve) => {
+    release = resolve;
+  });
+  imageUploadTails.set(list, prev.then(() => gate));
+  await prev;
+  imageUploading[batch.key] = true;
+  try {
+    const room = batch.max - list.length;
+    if (room <= 0) {
+      ElMessage.warning(`最多上传 ${batch.max} 张`);
+      return;
+    }
+    const accepted = batch.files.slice(0, room);
+    const ignored = batch.files.length - accepted.length;
+    const urls: Array<string | null> = new Array(accepted.length);
+    let cursor = 0;
+    const workerCount = Math.min(4, accepted.length);
+    await Promise.all(
+      Array.from({ length: workerCount }, async () => {
+        while (cursor < accepted.length) {
+          const index = cursor++;
+          const item = accepted[index];
+          try {
+            const { data } = await uploadAdminFile(item.file, "product", true);
+            urls[index] = data.data.url;
+          } catch {
+            urls[index] = null;
+          }
+        }
+      }),
+    );
+    let ok = 0;
+    for (const url of urls) {
+      if (url) {
+        list.push(url);
+        ok += 1;
+      }
+    }
+    const fail = accepted.length - ok;
+    if (ignored > 0) {
+      ElMessage.warning(`最多上传 ${batch.max} 张，已忽略多余的 ${ignored} 张`);
+    }
+    if (ok > 0 && fail === 0) {
+      ElMessage.success(ok > 1 ? `已上传 ${ok} 张` : "上传成功");
+    } else if (ok > 0) {
+      ElMessage.warning(`成功 ${ok} 张，失败 ${fail} 张`);
+    } else {
+      ElMessage.error("上传失败");
+    }
+  } finally {
+    batch.files.forEach((item) => item.resolve());
+    imageUploading[batch.key] = false;
+    release();
   }
-  const { data } = await uploadAdminFile(options.file as File, "product");
-  list.push(data.data.url);
-  ElMessage.success("上传成功");
 }
 
 async function onUploadSkuCover(options: UploadRequestOptions, row: SkuRow) {

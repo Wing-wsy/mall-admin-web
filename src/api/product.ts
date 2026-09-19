@@ -180,12 +180,12 @@ export function submitProduct(id: number) {
   return request.post<ApiResult<ProductVO>>(`/api/admin/product/${id}/submit`);
 }
 
-export function uploadAdminFile(file: File, folder = "product") {
+export function uploadAdminFile(file: File, folder = "product", skipErrorMessage = false) {
   const form = new FormData();
   form.append("file", file);
   return request.post<ApiResult<{ objectKey: string; url: string }>>(
     `/api/admin/file/upload?folder=${folder}`,
     form,
-    { headers: { "Content-Type": "multipart/form-data" } }
+    { headers: { "Content-Type": "multipart/form-data" }, skipErrorMessage }
   );
 }
