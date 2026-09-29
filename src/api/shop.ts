@@ -4,6 +4,9 @@ export interface ShopConfigVO {
   csPhone: string;
   csEmail: string;
   notice: string;
+  companyName?: string;
+  companyLogo?: string;
+  companyDesc?: string;
   returnName: string;
   returnPhone: string;
   returnAddress: string;
@@ -30,6 +33,9 @@ export interface ShopConfigSavePayload {
   csPhone?: string;
   csEmail?: string;
   notice?: string;
+  companyName?: string;
+  companyLogo?: string;
+  companyDesc?: string;
   returnName?: string;
   returnPhone?: string;
   returnAddress?: string;

@@ -1,7 +1,7 @@
 <template>
   <div class="login-page">
     <el-card class="login-card" shadow="never">
-      <h2>Mall Admin</h2>
+      <h2>礼尚企服</h2>
       <p class="hint">多商户入驻 · 试用 admin / merchant / ops（密码均为 admin123）</p>
       <el-form @submit.prevent>
         <el-form-item label="账号">

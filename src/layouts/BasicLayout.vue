@@ -1,7 +1,7 @@
 <template>
   <el-container class="layout">
     <el-aside width="220px" class="aside">
-      <div class="brand">Mall Admin</div>
+      <div class="brand">礼尚企服</div>
       <div class="aside-menu">
         <el-menu
           :default-active="active"

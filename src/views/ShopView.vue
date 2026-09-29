@@ -12,8 +12,35 @@
     </el-tabs>
 
     <el-card v-show="tab === 'contact'" v-loading="contactLoading" class="card">
-      <p class="hint">客服信息展示在小程序「我的 - 联系客服」；公告展示在首页搜索栏下方小喇叭。退货地址用于退货退款，同意后退给用户填写物流。均可留空。</p>
+      <p class="hint">公司名称、Logo 和描述展示在小程序联系客服弹窗；电话和邮箱展示在弹窗里；公告展示在首页搜索栏下方小喇叭。退货地址用于退货退款，同意后退给用户填写物流。均可留空。</p>
       <el-form label-width="96px" style="max-width: 560px">
+        <el-form-item label="公司名称">
+          <el-input v-model="contact.companyName" maxlength="64" placeholder="如 礼尚供应链管理（东莞）有限公司" />
+        </el-form-item>
+        <el-form-item label="公司 Logo">
+          <div class="logo-row">
+            <el-upload :show-file-list="false" :http-request="onUploadCompanyLogo" accept="image/*">
+              <el-button>上传图片</el-button>
+            </el-upload>
+            <el-image
+              v-if="contact.companyLogo"
+              :src="contact.companyLogo"
+              class="logo-preview"
+              fit="contain"
+            />
+            <el-button v-if="contact.companyLogo" link type="danger" @click="contact.companyLogo = ''">移除</el-button>
+          </div>
+        </el-form-item>
+        <el-form-item label="公司描述">
+          <el-input
+            v-model="contact.companyDesc"
+            type="textarea"
+            :rows="3"
+            maxlength="200"
+            show-word-limit
+            placeholder="展示在联系客服弹窗的公司名称下方，留空则不显示"
+          />
+        </el-form-item>
         <el-form-item label="客服电话">
           <el-input v-model="contact.csPhone" maxlength="32" placeholder="如 400-800-1234" />
         </el-form-item>
@@ -382,7 +409,7 @@
 
 <script setup lang="ts">
 import { onMounted, reactive, ref, watch } from "vue";
-import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
+import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadRequestOptions } from "element-plus";
 import {
   createMaintenanceWhitelist,
   deleteMaintenanceWhitelist,
@@ -394,6 +421,7 @@ import {
   type FreightRuleVO,
   type MaintenanceWhitelistVO,
 } from "@/api/shop";
+import { uploadAdminFile } from "@/api/product";
 import { useUserStore } from "@/stores/user";
 
 const userStore = useUserStore();
@@ -432,6 +460,9 @@ const contact = reactive({
   csPhone: "",
   csEmail: "",
   notice: "",
+  companyName: "",
+  companyLogo: "",
+  companyDesc: "",
   returnName: "",
   returnPhone: "",
   returnAddress: "",
@@ -517,6 +548,9 @@ async function loadContact() {
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
     contact.notice = data.data?.notice || "";
+    contact.companyName = data.data?.companyName || "";
+    contact.companyLogo = data.data?.companyLogo || "";
+    contact.companyDesc = data.data?.companyDesc || "";
     contact.returnName = data.data?.returnName || "";
     contact.returnPhone = data.data?.returnPhone || "";
     contact.returnAddress = data.data?.returnAddress || "";
@@ -542,6 +576,16 @@ async function loadContact() {
   }
 }
 
+async function onUploadCompanyLogo(options: UploadRequestOptions) {
+  const { data } = await uploadAdminFile(options.file as File, "shop");
+  const url = data.data?.url;
+  if (!url) {
+    return;
+  }
+  contact.companyLogo = url;
+  ElMessage.success("上传成功");
+}
+
 async function saveContact() {
   contactSaving.value = true;
   try {
@@ -549,6 +593,9 @@ async function saveContact() {
       csPhone: contact.csPhone.trim(),
       csEmail: contact.csEmail.trim(),
       notice: contact.notice.trim(),
+      companyName: contact.companyName.trim(),
+      companyLogo: contact.companyLogo.trim(),
+      companyDesc: contact.companyDesc.trim(),
       returnName: contact.returnName.trim(),
       returnPhone: contact.returnPhone.trim(),
       returnAddress: contact.returnAddress.trim(),
@@ -560,6 +607,9 @@ async function saveContact() {
     contact.csPhone = data.data?.csPhone || "";
     contact.csEmail = data.data?.csEmail || "";
     contact.notice = data.data?.notice || "";
+    contact.companyName = data.data?.companyName || "";
+    contact.companyLogo = data.data?.companyLogo || "";
+    contact.companyDesc = data.data?.companyDesc || "";
     contact.returnName = data.data?.returnName || "";
     contact.returnPhone = data.data?.returnPhone || "";
     contact.returnAddress = data.data?.returnAddress || "";
@@ -816,6 +866,17 @@ onMounted(() => {
   flex-wrap: wrap;
   gap: 8px;
   margin-bottom: 12px;
+}
+.logo-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.logo-preview {
+  width: 72px;
+  height: 72px;
+  border-radius: 8px;
+  background: #f7f8fa;
 }
 .pager {
   margin-top: 12px;

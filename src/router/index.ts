@@ -248,7 +248,7 @@ router.beforeEach((to) => {
 });
 
 router.afterEach((to) => {
-  document.title = `${String(to.meta.title || "Mall Admin")} - Mall Admin`;
+  document.title = `${String(to.meta.title || "礼尚企服")} - 礼尚企服`;
 });
 
 export default router;
