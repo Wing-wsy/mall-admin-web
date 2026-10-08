@@ -26,7 +26,13 @@ export interface AdminMemberVO {
   uplineMemberNo?: string;
   downlineCount?: number;
   addresses?: AdminMemberAddressVO[];
-  downlines?: { memberNo?: string; nickname?: string; phone?: string; createTime?: string }[];
+  downlines?: {
+    memberNo?: string;
+    nickname?: string;
+    avatarUrl?: string;
+    phone?: string;
+    createTime?: string;
+  }[];
 }
 
 export function fetchAdminMemberList(params?: {

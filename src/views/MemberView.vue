@@ -11,8 +11,15 @@
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
-      <el-table-column prop="nickname" label="昵称" min-width="140">
-        <template #default="{ row }">{{ row.nickname || "-" }}</template>
+      <el-table-column label="用户" min-width="180">
+        <template #default="{ row }">
+          <div class="user-cell">
+            <el-avatar :size="36" :src="row.avatarUrl || undefined">
+              {{ (row.nickname || "?").slice(0, 1) }}
+            </el-avatar>
+            <span class="user-name">{{ row.nickname || "-" }}</span>
+          </div>
+        </template>
       </el-table-column>
       <el-table-column prop="phone" label="手机号" width="140">
         <template #default="{ row }">{{ row.phone || "-" }}</template>
@@ -66,11 +73,16 @@
     <el-dialog v-model="visible" title="用户详情" width="720px">
       <template v-if="detail">
         <el-descriptions :column="2" border>
+          <el-descriptions-item label="头像">
+            <el-avatar :size="56" :src="detail.avatarUrl || undefined">
+              {{ (detail.nickname || "?").slice(0, 1) }}
+            </el-avatar>
+          </el-descriptions-item>
+          <el-descriptions-item label="用户昵称">{{ detail.nickname || "-" }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.memberNo || "-" }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             {{ detail.status === 1 ? "正常" : "停用" }}
           </el-descriptions-item>
-          <el-descriptions-item label="用户昵称">{{ detail.nickname || "-" }}</el-descriptions-item>
           <el-descriptions-item label="手机号">{{ detail.phone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="会员等级">{{ detail.levelName || "-" }}</el-descriptions-item>
           <el-descriptions-item label="上线">{{ detail.uplineMemberNo || "-" }}</el-descriptions-item>
@@ -95,7 +107,16 @@
         <div class="addr-title">下线列表</div>
         <el-table v-if="detail.downlines?.length" :data="detail.downlines" border>
           <el-table-column prop="memberNo" label="用户ID" min-width="140" />
-          <el-table-column prop="nickname" label="昵称" min-width="120" />
+          <el-table-column label="用户" min-width="160">
+            <template #default="{ row }">
+              <div class="user-cell">
+                <el-avatar :size="28" :src="row.avatarUrl || undefined">
+                  {{ (row.nickname || "?").slice(0, 1) }}
+                </el-avatar>
+                <span class="user-name">{{ row.nickname || "-" }}</span>
+              </div>
+            </template>
+          </el-table-column>
           <el-table-column prop="phone" label="手机号" width="140" />
           <el-table-column prop="createTime" label="绑定时间" min-width="170" />
         </el-table>
@@ -228,5 +249,15 @@ onMounted(load);
 .addr-title {
   margin: 16px 0 8px;
   font-weight: 600;
+}
+.user-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+.user-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>
