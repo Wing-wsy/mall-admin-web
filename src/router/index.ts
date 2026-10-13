@@ -220,6 +220,12 @@ const router = createRouter({
           meta: { title: "缓存管理", permission: "system:cache" },
         },
         {
+          path: "ai-assistant",
+          name: "ai-assistant",
+          component: () => import("@/views/AiAssistantView.vue"),
+          meta: { title: "AI 助手", permission: "ai:assistant" },
+        },
+        {
           path: "ping",
           name: "ping",
           component: () => import("@/views/PingView.vue"),

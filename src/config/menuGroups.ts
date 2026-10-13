@@ -5,7 +5,7 @@ export const MENU_GROUPS: { code: string; name: string; childCodes: string[] }[]
   { code: "marketing", name: "营销", childCodes: ["banner", "nav", "hot", "iconset", "theme", "coupon", "point", "voucher"] },
   { code: "trade", name: "交易", childCodes: ["order", "aftersale", "commission", "balance", "order-review"] },
   { code: "ums", name: "用户", childCodes: ["member", "level", "blacklist", "supplier", "system:tenant"] },
-  { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog", "system:cache"] },
+  { code: "system", name: "系统", childCodes: ["shop", "system:user", "system:role", "system:operlog", "system:cache", "ai:assistant"] },
 ];
 
 const MENU_ICONS: Record<string, string> = {
@@ -45,6 +45,7 @@ const MENU_ICONS: Record<string, string> = {
   "system:role": "peoples",
   "system:operlog": "log",
   "system:cache": "server",
+  "ai:assistant": "guide",
 };
 
 export function menuIcon(code: string) {
@@ -88,6 +89,7 @@ const MENU_TITLES: Record<string, string> = {
   "system:role": "角色管理",
   "system:operlog": "操作日志",
   "system:cache": "缓存管理",
+  "ai:assistant": "AI 助手",
 };
 
 function titled(node: MenuNode): MenuNode {
