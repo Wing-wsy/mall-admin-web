@@ -122,6 +122,7 @@
         </router-view>
       </el-main>
     </el-container>
+    <AiAssistantFloat />
   </el-container>
 </template>
 
@@ -140,6 +141,7 @@ import {
   markInboxRead,
   type AdminMessage,
 } from "@/api/inbox";
+import AiAssistantFloat from "@/components/ai/AiAssistantFloat.vue";
 import MenuIcon from "@/components/MenuIcon.vue";
 import { buildSidebarMenus, menuIcon } from "@/config/menuGroups";
 import { useTabStore } from "@/stores/tabs";
