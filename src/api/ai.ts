@@ -1,13 +1,6 @@
-import request, { type ApiResult } from "@/utils/request";
-
 export interface AiChatPayload {
   sessionId?: string;
   message: string;
-}
-
-export interface AiChatResult {
-  sessionId: string;
-  reply: string;
 }
 
 export interface AiStreamHandlers {
@@ -15,13 +8,6 @@ export interface AiStreamHandlers {
   onToken?: (token: string) => void;
   onDone?: () => void;
   onError?: (message: string) => void;
-}
-
-/** 非流式：一次返回完整回复 */
-export function chatWithAssistant(data: AiChatPayload) {
-  return request.post<ApiResult<AiChatResult>>("/api/admin/ai/assistant", data, {
-    timeout: 90000,
-  });
 }
 
 /**
@@ -78,7 +64,6 @@ export async function streamChatWithAssistant(data: AiChatPayload, handlers: AiS
     if (done) break;
     buffer += decoder.decode(value, { stream: true });
 
-    // SSE 事件以空行分隔
     let splitAt: number;
     while ((splitAt = buffer.indexOf("\n\n")) >= 0) {
       const rawEvent = buffer.slice(0, splitAt);
