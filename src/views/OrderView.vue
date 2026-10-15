@@ -2,6 +2,13 @@
   <div>
     <div class="toolbar">
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
+      <el-input
+        v-model="receiverPhone"
+        placeholder="手机号"
+        clearable
+        style="width: 160px"
+        @keyup.enter="search"
+      />
       <el-select v-model="status" clearable placeholder="状态" style="width: 140px">
         <el-option :value="10" label="待付款" />
         <el-option :value="20" label="待发货" />
@@ -72,6 +79,9 @@
         </template>
       </el-table-column>
       <el-table-column prop="receiverName" label="收货人" width="100" />
+      <el-table-column prop="receiverPhone" label="手机号" width="120">
+        <template #default="{ row }">{{ row.receiverPhone || "-" }}</template>
+      </el-table-column>
       <el-table-column prop="createTime" label="下单时间" min-width="170" />
       <el-table-column label="操作" width="260" fixed="right">
         <template #default="{ row }">
@@ -350,6 +360,7 @@ const pageNum = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
+const receiverPhone = ref("");
 const status = ref<number | undefined>();
 const orderType = ref("");
 const supplierId = ref<number | undefined>(userStore.isSupplier ? undefined : 0);
@@ -410,6 +421,7 @@ async function load() {
       status: status.value,
       orderType: orderType.value === "" ? undefined : Number(orderType.value),
       orderNo: orderNo.value || undefined,
+      receiverPhone: receiverPhone.value.trim() || undefined,
       supplierId: userStore.isSupplier ? undefined : supplierId.value,
       pageNum: pageNum.value,
       pageSize: pageSize.value,

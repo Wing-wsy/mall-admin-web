@@ -93,6 +93,7 @@ export function fetchAdminOrderList(params?: {
   status?: number;
   orderType?: number;
   orderNo?: string;
+  receiverPhone?: string;
   supplierId?: number;
   pageNum?: number;
   pageSize?: number;

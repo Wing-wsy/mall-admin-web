@@ -2,6 +2,13 @@
   <div>
     <div class="toolbar">
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="search" />
+      <el-input
+        v-model="receiverPhone"
+        placeholder="手机号"
+        clearable
+        style="width: 160px"
+        @keyup.enter="search"
+      />
       <el-input v-model="afterSaleNo" placeholder="售后单号" clearable style="width: 200px" @keyup.enter="search" />
       <el-select v-model="type" clearable placeholder="类型" style="width: 140px">
         <el-option :value="1" label="仅退款" />
@@ -25,11 +32,22 @@
       <el-table-column prop="memberNo" label="用户ID" min-width="120">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
-      <el-table-column prop="typeText" label="类型" width="110" />
+      <el-table-column prop="receiverPhone" label="手机号" width="120">
+        <template #default="{ row }">{{ row.receiverPhone || "-" }}</template>
+      </el-table-column>
+      <el-table-column label="类型" width="110">
+        <template #default="{ row }">
+          <el-tag :class="'at-' + row.type">{{ row.typeText }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column label="退款" width="120">
         <template #default="{ row }">{{ refundText(row) }}</template>
       </el-table-column>
-      <el-table-column prop="statusText" label="状态" width="120" />
+      <el-table-column label="状态" width="120">
+        <template #default="{ row }">
+          <el-tag :class="'as-' + row.status">{{ row.statusText }}</el-tag>
+        </template>
+      </el-table-column>
       <el-table-column prop="createTime" label="申请时间" min-width="170" />
       <el-table-column label="操作" width="220" fixed="right">
         <template #default="{ row }">
@@ -57,10 +75,15 @@
       <template v-if="detail">
         <el-descriptions :column="2" border>
           <el-descriptions-item label="售后单号">{{ detail.afterSaleNo }}</el-descriptions-item>
-          <el-descriptions-item label="状态">{{ detail.statusText }}</el-descriptions-item>
-          <el-descriptions-item label="类型">{{ detail.typeText }}</el-descriptions-item>
+          <el-descriptions-item label="状态">
+            <el-tag :class="'as-' + detail.status">{{ detail.statusText }}</el-tag>
+          </el-descriptions-item>
+          <el-descriptions-item label="类型">
+            <el-tag :class="'at-' + detail.type">{{ detail.typeText }}</el-tag>
+          </el-descriptions-item>
           <el-descriptions-item label="订单号">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.memberNo || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="手机号">{{ detail.receiverPhone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="退款">{{ refundText(detail) }}</el-descriptions-item>
           <el-descriptions-item label="原因">{{ detail.reasonText }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.remark" label="说明">{{ detail.remark }}</el-descriptions-item>
@@ -187,6 +210,7 @@ const pageNum = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
+const receiverPhone = ref("");
 const afterSaleNo = ref("");
 const type = ref<number | undefined>();
 const status = ref<number | undefined>();
@@ -230,6 +254,7 @@ async function load() {
       type: type.value,
       orderNo: orderNo.value || undefined,
       afterSaleNo: afterSaleNo.value || undefined,
+      receiverPhone: receiverPhone.value.trim() || undefined,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
     });
@@ -400,5 +425,50 @@ onMounted(load);
   margin-left: 12px;
   color: #9ca3af;
   font-size: 13px;
+}
+.at-1 {
+  --el-tag-bg-color: #dbeafe;
+  --el-tag-border-color: #3b82f6;
+  --el-tag-text-color: #1d4ed8;
+}
+.at-2 {
+  --el-tag-bg-color: #fee2e2;
+  --el-tag-border-color: #ef4444;
+  --el-tag-text-color: #b91c1c;
+}
+.as-10 {
+  --el-tag-bg-color: #fef3c7;
+  --el-tag-border-color: #f59e0b;
+  --el-tag-text-color: #b45309;
+}
+.as-20 {
+  --el-tag-bg-color: #dbeafe;
+  --el-tag-border-color: #3b82f6;
+  --el-tag-text-color: #1d4ed8;
+}
+.as-21 {
+  --el-tag-bg-color: #ede9fe;
+  --el-tag-border-color: #8b5cf6;
+  --el-tag-text-color: #6d28d9;
+}
+.as-30 {
+  --el-tag-bg-color: #ffedd5;
+  --el-tag-border-color: #f97316;
+  --el-tag-text-color: #c2410c;
+}
+.as-40 {
+  --el-tag-bg-color: #fee2e2;
+  --el-tag-border-color: #ef4444;
+  --el-tag-text-color: #b91c1c;
+}
+.as-50 {
+  --el-tag-bg-color: #f3f4f6;
+  --el-tag-border-color: #9ca3af;
+  --el-tag-text-color: #6b7280;
+}
+.as-60 {
+  --el-tag-bg-color: #dcfce7;
+  --el-tag-border-color: #22c55e;
+  --el-tag-text-color: #15803d;
 }
 </style>

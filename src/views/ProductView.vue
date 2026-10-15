@@ -524,6 +524,7 @@
         </el-form-item>
         <el-form-item v-if="!userStore.isSupplier" label="状态">
           <el-radio-group v-model="form.status">
+            <el-radio :value="3">待上架</el-radio>
             <el-radio :value="1">上架</el-radio>
             <el-radio :value="0">下架</el-radio>
           </el-radio-group>
@@ -573,7 +574,7 @@ interface SkuRow {
   id?: number;
   attrValueIds: number[];
   attrText: string;
-  price: number;
+  price?: number;
   originPrice?: number;
   stock: number;
   coverUrl?: string;
@@ -665,7 +666,7 @@ const form = reactive({
   galleryUrls: [] as string[],
   detailHtml: "",
   detailImageUrls: [] as string[],
-  status: 1,
+  status: 3,
   categoryId: undefined as number | undefined,
   brandId: undefined as number | undefined,
   festivalIds: [] as number[],
@@ -684,7 +685,9 @@ const commonFreeShipProvinces = ref<string[]>([]);
 
 const saleAttrOptions = computed(() => saleAttrs.value);
 
-const enabledSkus = computed(() => form.skus.filter((row) => row.status === 1 && row.price > 0));
+const enabledSkus = computed(() =>
+  form.skus.filter((row) => row.status === 1 && row.price != null && row.price > 0),
+);
 
 const stockSum = computed(() =>
   form.skus.reduce((sum, row) => sum + (row.status === 1 ? Number(row.stock) || 0 : 0), 0),
@@ -823,7 +826,7 @@ function emptySkuRow(attrValueIds: number[] = [], attrText = "默认"): SkuRow {
   return {
     attrValueIds: [...attrValueIds],
     attrText,
-    price: 1,
+    price: undefined,
     originPrice: undefined,
     stock: 0,
     coverUrl: "",
@@ -877,7 +880,7 @@ function generateSkus() {
       {
         ...emptySkuRow(),
         id: keep?.id,
-        price: keep?.price ?? 1,
+        price: keep?.price,
         originPrice: keep?.originPrice,
         stock: keep?.stock ?? 0,
         coverUrl: keep?.coverUrl || "",
@@ -1033,7 +1036,7 @@ function resetForm() {
   form.galleryUrls = [];
   form.detailHtml = "";
   form.detailImageUrls = [];
-  form.status = 1;
+  form.status = 3;
   form.categoryId = undefined;
   form.brandId = undefined;
   form.festivalIds = [];
@@ -1392,7 +1395,7 @@ async function save() {
         id: row.id,
         attrValueIds: [...(row.attrValueIds || [])],
         attrText: row.attrText || undefined,
-        price: row.price,
+        price: Number(row.price),
         originPrice: row.originPrice,
         stock: row.stock ?? 0,
         coverUrl: row.coverUrl || undefined,
