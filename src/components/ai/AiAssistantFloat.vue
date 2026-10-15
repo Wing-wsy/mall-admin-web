@@ -8,9 +8,14 @@
         role="dialog"
         aria-label="AI 助手"
       >
-        <div class="ai-panel-head">
+        <div
+          class="ai-panel-head"
+          :class="{ dragging: dragging }"
+          title="按住拖动"
+          @pointerdown="onPanelPointerDown"
+        >
           <span class="ai-panel-title">AI 助手</span>
-          <div class="ai-panel-actions">
+          <div class="ai-panel-actions" @pointerdown.stop>
             <el-button link type="primary" @click="goFullPage">整页</el-button>
             <button type="button" class="ai-close" title="关闭" @click="store.toggle(false)">×</button>
           </div>
@@ -119,9 +124,13 @@ function savePos() {
   );
 }
 
-function onPointerDown(e: PointerEvent) {
+/** false=拖 FAB（松手未移动则打开）；true=拖面板标题栏（松手只落位） */
+let dragPanel = false;
+
+function beginDrag(e: PointerEvent, panel: boolean) {
   if (e.button !== 0) return;
   e.preventDefault();
+  dragPanel = panel;
   dragging.value = true;
   moved.value = false;
   activePointerId = e.pointerId;
@@ -133,6 +142,14 @@ function onPointerDown(e: PointerEvent) {
   window.addEventListener("pointermove", onPointerMove);
   window.addEventListener("pointerup", onPointerUp);
   window.addEventListener("pointercancel", onPointerUp);
+}
+
+function onPointerDown(e: PointerEvent) {
+  beginDrag(e, false);
+}
+
+function onPanelPointerDown(e: PointerEvent) {
+  beginDrag(e, true);
 }
 
 function onPointerMove(e: PointerEvent) {
@@ -157,10 +174,11 @@ function onPointerUp(e: PointerEvent) {
   activePointerId = null;
   if (moved.value) {
     savePos();
-  } else {
+  } else if (!dragPanel) {
     store.toggle(true);
   }
   moved.value = false;
+  dragPanel = false;
 }
 
 function onResize() {
@@ -256,6 +274,13 @@ onUnmounted(() => {
   padding: 10px 12px 10px 16px;
   border-bottom: 1px solid #ebeef5;
   flex-shrink: 0;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.ai-panel-head.dragging {
+  cursor: grabbing;
 }
 
 .ai-panel-title {

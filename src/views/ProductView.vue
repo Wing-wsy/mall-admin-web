@@ -47,7 +47,14 @@
       </el-select>
       <el-select v-model="query.brandId" clearable filterable placeholder="品牌" style="width: 140px">
         <el-option label="无品牌" :value="0" />
-        <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id" />
+        <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id">
+          <span class="brand-option">
+            <span>{{ b.name }}</span>
+            <span v-if="brandLetterVisible(brandOptions, b)" class="brand-option-letter">{{
+              b.options || ""
+            }}</span>
+          </span>
+        </el-option>
       </el-select>
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
@@ -180,7 +187,14 @@
             placeholder="可选，不选则不展示品牌"
             style="width: 100%"
           >
-            <el-option v-for="b in brandFormOptions" :key="b.id" :label="b.name" :value="b.id" />
+            <el-option v-for="b in brandFormOptions" :key="b.id" :label="b.name" :value="b.id">
+              <span class="brand-option">
+                <span>{{ b.name }}</span>
+                <span v-if="brandLetterVisible(brandFormOptions, b)" class="brand-option-letter">{{
+                  b.options || ""
+                }}</span>
+              </span>
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="节日分类">
@@ -774,6 +788,15 @@ async function loadTrees() {
   }
 }
 
+/** 同字母组仅首条显示右侧字母 */
+function brandLetterVisible(list: BrandOptionVO[], row: BrandOptionVO) {
+  const letter = row.options || "";
+  if (!letter) return false;
+  const idx = list.findIndex((b) => b.id === row.id);
+  if (idx <= 0) return true;
+  return (list[idx - 1]?.options || "") !== letter;
+}
+
 function attrNameOf(attrId: number) {
   return saleAttrs.value.find((a) => a.id === attrId)?.name || `属性${attrId}`;
 }
@@ -1094,7 +1117,8 @@ async function openEdit(row: ProductVO) {
   form.categoryId = detail.categoryId;
   form.brandId = detail.brandId ?? undefined;
   if (detail.brandId && detail.brandName && !brandFormOptions.value.some((b) => b.id === detail.brandId)) {
-    brandFormOptions.value = [{ id: detail.brandId, name: detail.brandName }, ...brandFormOptions.value];
+    // 停用品牌仍展示在选项末尾，不打乱已启用列表的 options 排序
+    brandFormOptions.value = [...brandFormOptions.value, { id: detail.brandId, name: detail.brandName }];
   }
   form.festivalIds = [...(detail.festivalIds || [])];
   form.stockAlertQty = detail.stockAlertQty ?? undefined;
@@ -1551,5 +1575,18 @@ onMounted(async () => {
   min-width: 72px;
   color: #374151;
   font-size: 13px;
+}
+.brand-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.brand-option-letter {
+  flex-shrink: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>
