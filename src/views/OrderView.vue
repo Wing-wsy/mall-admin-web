@@ -3,8 +3,15 @@
     <div class="toolbar">
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-input
+        v-model="memberPhone"
+        placeholder="下单人手机号"
+        clearable
+        style="width: 160px"
+        @keyup.enter="search"
+      />
+      <el-input
         v-model="receiverPhone"
-        placeholder="手机号"
+        placeholder="收货人手机号"
         clearable
         style="width: 160px"
         @keyup.enter="search"
@@ -36,12 +43,15 @@
       <el-button type="primary" @click="search">查询</el-button>
     </div>
     <el-table :data="list" v-loading="loading" border stripe>
-      <el-table-column prop="orderNo" label="订单号" min-width="180" />
+      <el-table-column prop="orderNo" label="订单号" min-width="210" show-overflow-tooltip />
       <el-table-column label="发货方" width="120">
         <template #default="{ row }">{{ row.supplierName || (row.supplierId ? "供应商" : "自营") }}</template>
       </el-table-column>
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
+      </el-table-column>
+      <el-table-column prop="memberPhone" label="下单人手机号" width="130">
+        <template #default="{ row }">{{ row.memberPhone || "-" }}</template>
       </el-table-column>
       <el-table-column label="商品" min-width="220">
         <template #default="{ row }">
@@ -79,7 +89,7 @@
         </template>
       </el-table-column>
       <el-table-column prop="receiverName" label="收货人" width="100" />
-      <el-table-column prop="receiverPhone" label="手机号" width="120">
+      <el-table-column prop="receiverPhone" label="收货人手机号" width="130">
         <template #default="{ row }">{{ row.receiverPhone || "-" }}</template>
       </el-table-column>
       <el-table-column prop="createTime" label="下单时间" min-width="170" />
@@ -173,6 +183,7 @@
           <el-descriptions-item label="支付渠道">
             {{ detail.orderType === 1 ? "积分兑换" : detail.orderType === 2 ? "兑换券" : detail.payChannel || "-" }}
           </el-descriptions-item>
+          <el-descriptions-item label="下单人手机号">{{ detail.memberPhone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="收货人">{{ detail.receiverName }} {{ detail.receiverPhone }}</el-descriptions-item>
           <el-descriptions-item label="地址" :span="2">{{ detail.receiverAddress }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.expressNo" label="物流">
@@ -360,6 +371,7 @@ const pageNum = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
+const memberPhone = ref("");
 const receiverPhone = ref("");
 const status = ref<number | undefined>();
 const orderType = ref("");
@@ -421,6 +433,7 @@ async function load() {
       status: status.value,
       orderType: orderType.value === "" ? undefined : Number(orderType.value),
       orderNo: orderNo.value || undefined,
+      memberPhone: memberPhone.value.trim() || undefined,
       receiverPhone: receiverPhone.value.trim() || undefined,
       supplierId: userStore.isSupplier ? undefined : supplierId.value,
       pageNum: pageNum.value,

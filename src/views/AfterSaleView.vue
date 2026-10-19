@@ -3,8 +3,15 @@
     <div class="toolbar">
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="search" />
       <el-input
+        v-model="memberPhone"
+        placeholder="下单人手机号"
+        clearable
+        style="width: 160px"
+        @keyup.enter="search"
+      />
+      <el-input
         v-model="receiverPhone"
-        placeholder="手机号"
+        placeholder="收货人手机号"
         clearable
         style="width: 160px"
         @keyup.enter="search"
@@ -32,7 +39,10 @@
       <el-table-column prop="memberNo" label="用户ID" min-width="120">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
-      <el-table-column prop="receiverPhone" label="手机号" width="120">
+      <el-table-column prop="memberPhone" label="下单人手机号" width="130">
+        <template #default="{ row }">{{ row.memberPhone || "-" }}</template>
+      </el-table-column>
+      <el-table-column prop="receiverPhone" label="收货人手机号" width="130">
         <template #default="{ row }">{{ row.receiverPhone || "-" }}</template>
       </el-table-column>
       <el-table-column label="类型" width="110">
@@ -83,7 +93,8 @@
           </el-descriptions-item>
           <el-descriptions-item label="订单号">{{ detail.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="用户ID">{{ detail.memberNo || "-" }}</el-descriptions-item>
-          <el-descriptions-item label="手机号">{{ detail.receiverPhone || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="下单人手机号">{{ detail.memberPhone || "-" }}</el-descriptions-item>
+          <el-descriptions-item label="收货人手机号">{{ detail.receiverPhone || "-" }}</el-descriptions-item>
           <el-descriptions-item label="退款">{{ refundText(detail) }}</el-descriptions-item>
           <el-descriptions-item label="原因">{{ detail.reasonText }}</el-descriptions-item>
           <el-descriptions-item v-if="detail.remark" label="说明">{{ detail.remark }}</el-descriptions-item>
@@ -210,6 +221,7 @@ const pageNum = ref(1);
 const pageSize = ref(10);
 const loading = ref(false);
 const orderNo = ref("");
+const memberPhone = ref("");
 const receiverPhone = ref("");
 const afterSaleNo = ref("");
 const type = ref<number | undefined>();
@@ -254,6 +266,7 @@ async function load() {
       type: type.value,
       orderNo: orderNo.value || undefined,
       afterSaleNo: afterSaleNo.value || undefined,
+      memberPhone: memberPhone.value.trim() || undefined,
       receiverPhone: receiverPhone.value.trim() || undefined,
       pageNum: pageNum.value,
       pageSize: pageSize.value,
