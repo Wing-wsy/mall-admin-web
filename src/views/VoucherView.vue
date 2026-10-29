@@ -1,17 +1,20 @@
 <template>
-  <div>
-    <el-tabs v-model="tab">
+  <div ref="pageRef">
+    <div data-sticky-chrome>
+
+      <el-tabs v-model="tab">
       <el-tab-pane label="券种" name="tpl" />
       <el-tab-pane label="券码" name="code" />
     </el-tabs>
+    </div>
 
     <div v-show="tab === 'tpl'">
-      <div class="toolbar">
+      <div class="toolbar" data-sticky-chrome>
         <el-button type="primary" @click="openCreate">新增券种</el-button>
         <el-button @click="loadTemplates">刷新</el-button>
         <span class="hint">验证码生成后仅导出一次明文，用于印刷刮涂层。购卡走普通商品订单，不绑码。</span>
       </div>
-      <el-table :data="templates" v-loading="tplLoading" border stripe>
+      <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
         <el-table-column prop="name" label="券种" min-width="140" />
         <el-table-column label="兑换礼盒" min-width="180">
           <template #default="{ row }">
@@ -53,7 +56,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
+      <div class="pager" data-sticky-chrome>
         <el-pagination
           v-model:current-page="tplPageNum"
           v-model:page-size="tplPageSize"
@@ -68,7 +71,7 @@
     </div>
 
     <div v-show="tab === 'code'">
-      <div class="toolbar">
+      <div class="toolbar" data-sticky-chrome>
         <el-select v-model="codeTemplateId" clearable filterable placeholder="券种" style="width: 180px">
           <el-option v-for="t in templateOptions" :key="t.id" :label="t.name" :value="t.id" />
         </el-select>
@@ -83,7 +86,7 @@
         <el-button type="primary" @click="searchCodes">查询</el-button>
         <el-button @click="openVoidBatch">按批次作废</el-button>
       </div>
-      <el-table :data="codes" v-loading="codeLoading" border stripe>
+      <el-table :data="codes" v-loading="codeLoading" border stripe :height="tableHeight">
         <el-table-column prop="codeMask" label="验证码" width="120" />
         <el-table-column prop="templateName" label="券种" min-width="120" />
         <el-table-column prop="batchNo" label="批次" min-width="160" />
@@ -107,7 +110,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
+      <div class="pager" data-sticky-chrome>
         <el-pagination
           v-model:current-page="codePageNum"
           v-model:page-size="codePageSize"
@@ -187,6 +190,7 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -204,6 +208,9 @@ import {
   type AdminVoucherTemplateVO,
 } from "@/api/voucher";
 import { fetchProductList, type ProductSkuVO, type ProductVO } from "@/api/product";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
+
 
 const tab = ref("tpl");
 const templates = ref<AdminVoucherTemplateVO[]>([]);
@@ -249,6 +256,7 @@ watch(tab, (name) => {
   if (name === "code" && !codes.value.length) {
     loadCodes();
   }
+  void syncTableHeightNextTick();
 });
 
 function codeStatusType(status: number) {
@@ -458,9 +466,10 @@ async function openVoidBatch() {
   await loadTemplates();
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadTemplateOptions();
   loadTemplates();
+  await syncTableHeightNextTick();
 });
 </script>
 

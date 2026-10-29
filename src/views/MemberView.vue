@@ -1,13 +1,13 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="memberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="search" />
       <el-input v-model="nickname" placeholder="昵称" clearable style="width: 180px" @keyup.enter="search" />
       <el-input v-model="phone" placeholder="手机号" clearable style="width: 180px" @keyup.enter="search" />
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="reset">重置</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
       </el-table-column>
@@ -59,7 +59,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -149,12 +149,15 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
 import { fetchAdminMemberDetail, fetchAdminMemberList, type AdminMemberVO } from "@/api/member";
 import { fetchCouponTemplates, issueCoupons, type AdminCouponTemplateVO } from "@/api/coupon";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<AdminMemberVO[]>([]);
 const total = ref(0);
@@ -235,7 +238,10 @@ async function submitIssue() {
   }
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

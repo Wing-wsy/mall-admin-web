@@ -1,5 +1,5 @@
 <template>
-  <div>
+  <div ref="pageRef">
     <el-alert
       type="warning"
       :closable="false"
@@ -8,7 +8,7 @@
       style="margin-bottom: 12px"
     />
 
-    <div class="toolbar">
+    <div class="toolbar" data-sticky-chrome>
       <el-button v-if="userStore.hasPermission('system:cache:set')" type="primary" @click="openCreate">
         新建
       </el-button>
@@ -45,14 +45,12 @@
       style="margin-bottom: 12px"
     />
 
-    <el-table
-      :data="list"
+    <el-table :data="list"
       v-loading="loading"
       border
       stripe
       row-key="key"
-      @selection-change="onSelectionChange"
-    >
+      @selection-change="onSelectionChange" :height="tableHeight">
       <el-table-column
         v-if="userStore.hasPermission('system:cache:delete')"
         type="selection"
@@ -100,7 +98,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -177,10 +175,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
+
   deleteCacheKeys,
   fetchCacheDetail,
   fetchCacheKeys,
@@ -190,6 +190,8 @@ import {
   type CacheKeyVO,
 } from "@/api/cache";
 import { useUserStore } from "@/stores/user";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const userStore = useUserStore();
 const loading = ref(false);
@@ -372,7 +374,10 @@ async function onBatchDelete() {
   load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

@@ -1,10 +1,10 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新增售卖单位</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="名称" min-width="140" />
       <el-table-column prop="sort" label="排序" width="90" />
@@ -32,7 +32,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -70,10 +70,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
+
   createSpec,
   deleteSpec,
   fetchSpecList,
@@ -81,6 +83,8 @@ import {
   updateSpecStatus,
   type SpecVO,
 } from "@/api/spec";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<SpecVO[]>([]);
 const total = ref(0);
@@ -175,7 +179,10 @@ async function onDelete(row: SpecVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

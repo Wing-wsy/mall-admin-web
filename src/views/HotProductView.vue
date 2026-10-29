@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新增热卖</el-button>
       <el-button @click="load">刷新</el-button>
       <span class="hint">首页按排序展示启用且上架的商品；下架商品不会出现在小程序</span>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="90">
         <template #default="{ row }">
@@ -45,7 +45,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -91,10 +91,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
+
   createHotProduct,
   deleteHotProduct,
   fetchHotProductList,
@@ -109,6 +111,8 @@ import {
   productPickCascaderProps,
   type ProductPickTreeOption,
 } from "@/utils/productPickTree";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<HotProductVO[]>([]);
 const total = ref(0);
@@ -209,6 +213,7 @@ async function onDelete(row: HotProductVO) {
 }
 
 onMounted(async () => {
+  await syncTableHeightNextTick();
   await loadProductOptions();
   await load();
 });

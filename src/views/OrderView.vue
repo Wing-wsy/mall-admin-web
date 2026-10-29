@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-input
         v-model="memberPhone"
@@ -42,7 +42,7 @@
       </el-select>
       <el-button type="primary" @click="search">查询</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="orderNo" label="订单号" min-width="210" show-overflow-tooltip />
       <el-table-column label="发货方" width="120">
         <template #default="{ row }">{{ row.supplierName || (row.supplierId ? "供应商" : "自营") }}</template>
@@ -116,7 +116,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -345,6 +345,7 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
@@ -355,6 +356,7 @@ import { useUserStore } from "@/stores/user";
 import { fetchSupplierOptions, type AdminSupplierVO } from "@/api/supplier";
 import { directRefund, fetchDirectRefundReasonOptions, type AfterSaleReasonVO } from "@/api/aftersale";
 import {
+
   adjustAdminOrderPay,
   cancelAdminOrder,
   fetchAdminOrderDetail,
@@ -364,6 +366,8 @@ import {
   type AdminExpressVO,
   type AdminOrderVO,
 } from "@/api/order";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const router = useRouter();
 const userStore = useUserStore();
@@ -648,6 +652,7 @@ async function onCancel(row: AdminOrderVO) {
 }
 
 onMounted(async () => {
+  await syncTableHeightNextTick();
   if (!userStore.isSupplier) {
     try {
       const { data } = await fetchSupplierOptions();

@@ -1,12 +1,12 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新建套装</el-button>
       <el-button @click="load">刷新</el-button>
       <el-button v-if="hasActive" @click="onClearActive">取消店铺强制套</el-button>
       <span class="hint">启用某套后，首页金刚区和底栏 Tab 一起换成该套画风；取消后跟随节日皮肤绑定的套装</span>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="80">
         <template #default="{ row }">
@@ -132,11 +132,13 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
+
   activateIconSet,
   clearActiveIconSet,
   createIconSet,
@@ -149,6 +151,8 @@ import {
 } from "@/api/iconSet";
 import { fetchNavEntryList, type NavEntryVO } from "@/api/navEntry";
 import { uploadAdminFile } from "@/api/product";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<IconSetVO[]>([]);
 const slots = ref<IconSlotVO[]>([]);
@@ -320,7 +324,10 @@ async function onDelete(row: IconSetVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

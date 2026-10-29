@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input
         v-model="query.username"
         clearable
@@ -45,7 +45,7 @@
       <el-button @click="resetQuery">重置</el-button>
     </div>
 
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="createTime" label="时间" width="170" />
       <el-table-column label="操作人" width="150">
         <template #default="{ row }">{{ row.nickname || row.username || "-" }}</template>
@@ -75,7 +75,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -117,9 +117,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { fetchOperLogList, type OperLogVO } from "@/api/operLog";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const loading = ref(false);
 const list = ref<OperLogVO[]>([]);
@@ -179,7 +182,10 @@ function openDetail(row: OperLogVO) {
   visible.value = true;
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

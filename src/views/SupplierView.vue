@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="query.name" placeholder="供应商名称" clearable style="width: 180px" @keyup.enter="search" />
       <el-input
         v-if="!userStore.isSupplier"
@@ -19,7 +19,7 @@
       <el-button v-if="!userStore.isSupplier" type="primary" @click="openCreate">新建</el-button>
       <el-button v-if="!userStore.isSupplier" @click="openSetting">设置</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="name" label="供应商" min-width="140" />
       <el-table-column prop="phone" label="会员手机" width="130" />
       <el-table-column prop="contact" label="联系方式" width="130" />
@@ -50,7 +50,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -102,10 +102,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
+
   approveSupplier,
   createSupplier,
   deleteSupplier,
@@ -118,6 +120,8 @@ import {
   type AdminSupplierVO,
 } from "@/api/supplier";
 import { useUserStore } from "@/stores/user";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const userStore = useUserStore();
 
@@ -273,7 +277,10 @@ async function saveSetting() {
   }
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

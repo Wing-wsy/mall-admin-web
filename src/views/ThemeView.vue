@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新建皮肤</el-button>
       <el-button @click="load">刷新</el-button>
       <span class="hint">有效期继承绑定的节日一级分类；多皮肤重叠按优先级取最高</span>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="code" label="编码" width="120" />
       <el-table-column prop="name" label="名称" width="120" />
@@ -171,6 +171,7 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
@@ -179,6 +180,7 @@ import { CATEGORY_TYPE_FESTIVAL, fetchCategoryTree, type CategoryTreeVO } from "
 import { uploadAdminFile } from "@/api/product";
 import { fetchIconSetList, type IconSetVO } from "@/api/iconSet";
 import {
+
   createTheme,
   deleteTheme,
   fetchThemeList,
@@ -186,6 +188,8 @@ import {
   updateThemeStatus,
   type ThemeVO,
 } from "@/api/theme";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 type TabItem = { index: number; text: string; iconPath: string; selectedIconPath: string };
 
@@ -396,6 +400,7 @@ async function onDelete(row: ThemeVO) {
 }
 
 onMounted(async () => {
+  await syncTableHeightNextTick();
   await Promise.all([load(), loadFestivals(), loadIconSets()]);
 });
 </script>

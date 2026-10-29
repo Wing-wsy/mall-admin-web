@@ -1,11 +1,11 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新增导航</el-button>
       <el-button @click="load">刷新</el-button>
       <span class="hint">小程序首页按 2 行 5 列分页展示；图标走「图标套装」槽位，换套不必改这里。覆盖图仅在该格子要单独换图时上传</span>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="图标" width="90">
         <template #default="{ row }">
@@ -44,7 +44,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -161,11 +161,13 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onActivated, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
+
   createNavEntry,
   deleteNavEntry,
   fetchNavEntryList,
@@ -180,6 +182,8 @@ import {
 } from "@/api/category";
 import { fetchProductList, uploadAdminFile, type ProductVO } from "@/api/product";
 import { asPage } from "@/utils/page";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 interface TreeOption {
   value: number;
@@ -418,7 +422,10 @@ async function onDelete(row: NavEntryVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 onActivated(load);
 </script>
 

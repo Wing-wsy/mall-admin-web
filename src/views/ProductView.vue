@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef" class="product-page">
+    <div ref="toolbarRef" class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate">新增商品</el-button>
       <el-button @click="load">刷新</el-button>
       <el-button
@@ -73,6 +73,7 @@
       border
       stripe
       row-key="id"
+      :height="tableHeight"
       @selection-change="onSelectionChange"
     >
       <el-table-column
@@ -190,7 +191,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div ref="pagerRef" class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -589,6 +590,7 @@ import { ElMessage, ElMessageBox } from "element-plus";
 import OpBtn from "@/components/OpBtn.vue";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import type { UploadRequestOptions } from "element-plus";
+import { useStickyTable } from "@/composables/useStickyTable";
 import { useUserStore } from "@/stores/user";
 import {
   CATEGORY_TYPE_FESTIVAL,
@@ -678,6 +680,7 @@ const selectedDeletable = computed(() => selectedRows.value.filter((row) => row.
 const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(10);
+const { pageRef, toolbarRef, pagerRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 const productTree = ref<TreeOption[]>([]);
 const festivalTree = ref<TreeOption[]>([]);
 const filterProductTree = ref<TreeOption[]>([]);
@@ -1572,10 +1575,14 @@ async function onSubmit(row: ProductVO) {
 
 onMounted(async () => {
   await Promise.all([load(), loadTrees()]);
+  await syncTableHeightNextTick();
 });
 </script>
 
 <style scoped>
+.product-page {
+  min-height: 0;
+}
 .toolbar {
   margin-bottom: 12px;
   display: flex;

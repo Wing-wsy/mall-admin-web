@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="search" />
       <el-input
         v-model="memberPhone"
@@ -33,7 +33,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button v-if="userStore.hasPermission('aftersale:audit')" @click="openReasons">主动退款原因</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="afterSaleNo" label="售后单号" min-width="180" />
       <el-table-column prop="orderNo" label="订单号" min-width="170" />
       <el-table-column prop="memberNo" label="用户ID" min-width="120">
@@ -70,7 +70,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -204,11 +204,13 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useUserStore } from "@/stores/user";
 import {
+
   approveAfterSale,
   createDirectRefundReason,
   deleteDirectRefundReason,
@@ -222,6 +224,8 @@ import {
   type AdminAfterSaleVO,
   type AfterSaleReasonVO,
 } from "@/api/aftersale";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const userStore = useUserStore();
 const list = ref<AdminAfterSaleVO[]>([]);
@@ -412,7 +416,10 @@ async function onDeleteReason(row: AfterSaleReasonVO) {
   await loadReasons();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

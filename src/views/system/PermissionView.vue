@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreate(null)">新建顶级菜单</el-button>
       <el-button @click="load">刷新</el-button>
       <el-alert
@@ -12,14 +12,12 @@
       />
     </div>
 
-    <el-table
-      :data="tree"
+    <el-table :data="tree"
       v-loading="loading"
       border
       stripe
       row-key="id"
-      :tree-props="{ children: 'children' }"
-    >
+      :tree-props="{ children: 'children' }" :height="tableHeight">
       <el-table-column prop="name" label="名称" min-width="180" />
       <el-table-column prop="code" label="编码" min-width="180" />
       <el-table-column label="类型" width="90">
@@ -107,10 +105,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {
+
   createPermission,
   deletePermission,
   fetchPermissionManageTree,
@@ -120,6 +120,8 @@ import {
 } from "@/api/permission";
 import { fetchAdminMe } from "@/api/auth";
 import { useUserStore } from "@/stores/user";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const userStore = useUserStore();
 const tree = ref<PermissionNode[]>([]);
@@ -275,7 +277,10 @@ async function onDelete(row: PermissionNode) {
   await refreshProfile();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

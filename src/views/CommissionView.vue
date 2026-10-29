@@ -1,10 +1,10 @@
 <template>
-  <div>
+  <div ref="pageRef">
     <el-tabs v-model="kind" @tab-change="onKindChange">
       <el-tab-pane label="供货佣金" name="supply" />
       <el-tab-pane label="分享佣金" name="share" />
     </el-tabs>
-    <div class="toolbar">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 220px" @keyup.enter="search" />
       <el-input
         v-model="sellerMemberNo"
@@ -20,7 +20,7 @@
       </el-select>
       <el-button type="primary" @click="search">查询</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
       <el-table-column v-if="kind === 'share'" prop="uplineMemberNo" label="上线会员" min-width="140">
         <template #default="{ row }">{{ row.uplineMemberNo || "-" }}</template>
@@ -77,7 +77,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -136,11 +136,14 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import { fetchAdminCommissionList, type AdminCommissionVO } from "@/api/commission";
 import { fetchAdminOrderDetail, type AdminOrderVO } from "@/api/order";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<AdminCommissionVO[]>([]);
 const total = ref(0);
@@ -220,7 +223,10 @@ function openProduct(id: number) {
   productVisible.value = true;
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

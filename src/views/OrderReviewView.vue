@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="orderNo" placeholder="订单号" clearable style="width: 200px" @keyup.enter="search" />
       <el-input v-model="memberId" placeholder="用户ID(memberId)" clearable style="width: 180px" @keyup.enter="search" />
       <el-select v-model="rating" clearable placeholder="星级" style="width: 120px">
@@ -17,7 +17,7 @@
       />
       <el-button type="primary" @click="search">查询</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="orderNo" label="订单号" min-width="170">
         <template #default="{ row }">
           <el-button link type="primary" @click="openOrder(row)">{{ row.orderNo }}</el-button>
@@ -54,7 +54,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -146,10 +146,14 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import { onMounted, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { fetchOrderReviewList, type AdminOrderReviewVO } from "@/api/orderReview";
 import { fetchAdminOrderDetail, type AdminOrderVO } from "@/api/order";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
+
 
 const orderNo = ref("");
 const memberId = ref("");
@@ -216,7 +220,10 @@ async function openOrder(row: AdminOrderReviewVO) {
   }
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

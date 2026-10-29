@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="query.name" clearable placeholder="套装名称" style="width: 180px" @keyup.enter="search" />
       <el-select v-model="query.status" clearable placeholder="状态" style="width: 120px">
         <el-option label="上架" :value="1" />
@@ -12,7 +12,7 @@
       <span class="hint">仅自营商品可组套；下单按礼盒发货，库存扣子商品</span>
     </div>
 
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="90">
         <template #default="{ row }">
@@ -45,7 +45,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -168,12 +168,14 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import ComboDetailDialog from "@/components/ComboDetailDialog.vue";
 import {
+
   createCombo,
   fetchComboDetail,
   fetchComboList,
@@ -189,6 +191,8 @@ import {
   productPickCascaderProps,
   type ProductPickTreeOption,
 } from "@/utils/productPickTree";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const list = ref<ComboVO[]>([]);
 const total = ref(0);
@@ -401,7 +405,10 @@ async function toggleStatus(row: ComboVO) {
   load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

@@ -1,6 +1,6 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-input v-model="query.phone" placeholder="手机号" clearable style="width: 180px" @keyup.enter="search" />
       <el-select v-model="query.reasonCode" clearable placeholder="拉黑原因" style="width: 200px">
         <el-option v-for="item in reasons" :key="item.code" :label="item.label" :value="item.code" />
@@ -12,7 +12,7 @@
       <el-button @click="load">刷新</el-button>
     </div>
 
-    <el-table :data="rows" v-loading="loading" border stripe>
+    <el-table :data="rows" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="phone" label="手机号" width="140" />
       <el-table-column prop="reasonLabel" label="拉黑原因" min-width="160" />
       <el-table-column label="已注册用户" min-width="140">
@@ -35,7 +35,7 @@
       </el-table-column>
     </el-table>
 
-    <div class="pager">
+    <div class="pager" data-sticky-chrome>
       <el-pagination
         v-model:current-page="pageNum"
         v-model:page-size="pageSize"
@@ -68,10 +68,12 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
 import {
+
   createBlacklistPhone,
   deleteBlacklistPhone,
   fetchBlacklistPhones,
@@ -80,6 +82,8 @@ import {
   type MemberBlacklistReasonVO,
 } from "@/api/blacklist";
 import { useUserStore } from "@/stores/user";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const userStore = useUserStore();
 const loading = ref(false);
@@ -160,6 +164,7 @@ async function onDelete(row: AdminMemberBlacklistVO) {
 }
 
 onMounted(async () => {
+  await syncTableHeightNextTick();
   await loadReasons();
   await load();
 });

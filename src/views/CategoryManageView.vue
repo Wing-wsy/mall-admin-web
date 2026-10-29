@@ -1,21 +1,19 @@
 <template>
-  <div>
-    <div class="toolbar">
+  <div ref="pageRef">
+    <div class="toolbar" data-sticky-chrome>
       <el-button type="primary" @click="openCreateRoot">新增一级</el-button>
       <el-button @click="load">刷新</el-button>
       <span class="hint">商品只能挂在没有子分类的末级；给已有商品的分类加子级时，会把商品转到新分类</span>
       <span v-if="isFestival" class="hint">节日起止时间配在一级；过期后小程序自动隐藏，商品关联保留</span>
     </div>
 
-    <el-table
-      :data="tree"
+    <el-table :data="tree"
       v-loading="loading"
       border
       stripe
       row-key="id"
       default-expand-all
-      :tree-props="{ children: 'children' }"
-    >
+      :tree-props="{ children: 'children' }" :height="tableHeight">
       <el-table-column prop="name" label="名称" min-width="180" />
       <el-table-column label="层级" width="90">
         <template #default="{ row }">
@@ -130,11 +128,13 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";
 import {
+
   CATEGORY_TYPE_FESTIVAL,
   createCategory,
   deleteCategory,
@@ -144,6 +144,8 @@ import {
   type CategoryTreeVO,
 } from "@/api/category";
 import { uploadAdminFile } from "@/api/product";
+
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
 
 const MAX_LEVEL = 5;
 const LEVEL_NAMES = ["", "一级", "二级", "三级", "四级", "五级"];
@@ -372,7 +374,10 @@ async function onDelete(row: CategoryTreeVO) {
   await load();
 }
 
-onMounted(load);
+onMounted(async () => {
+  await load();
+  await syncTableHeightNextTick();
+});
 </script>
 
 <style scoped>

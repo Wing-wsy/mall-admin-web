@@ -1,17 +1,20 @@
 <template>
-  <div>
-    <el-tabs v-model="tab">
+  <div ref="pageRef">
+    <div data-sticky-chrome>
+
+      <el-tabs v-model="tab">
       <el-tab-pane label="券模板" name="tpl" />
       <el-tab-pane label="发放记录" name="log" />
     </el-tabs>
+    </div>
 
     <div v-show="tab === 'tpl'">
-      <div class="toolbar">
+      <div class="toolbar" data-sticky-chrome>
         <el-button type="primary" @click="openCreate">新增模板</el-button>
         <el-button @click="openIssue()">发券</el-button>
         <el-button @click="loadTemplates">刷新</el-button>
       </div>
-      <el-table :data="templates" v-loading="tplLoading" border stripe>
+      <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
         <el-table-column prop="name" label="名称" min-width="140" />
         <el-table-column prop="issueTypeText" label="发放方式" width="110" />
         <el-table-column prop="benefitText" label="优惠" width="140" />
@@ -47,7 +50,7 @@
           </template>
         </el-table-column>
       </el-table>
-      <div class="pager">
+      <div class="pager" data-sticky-chrome>
         <el-pagination
           v-model:current-page="tplPageNum"
           v-model:page-size="tplPageSize"
@@ -62,7 +65,7 @@
     </div>
 
     <div v-show="tab === 'log'">
-      <div class="toolbar">
+      <div class="toolbar" data-sticky-chrome>
         <el-input v-model="couponNo" placeholder="券编号" clearable style="width: 180px" @keyup.enter="searchRecords" />
         <el-input v-model="recordMemberNo" placeholder="用户ID" clearable style="width: 180px" @keyup.enter="searchRecords" />
         <el-select v-model="recordStatus" clearable placeholder="状态" style="width: 120px">
@@ -73,7 +76,7 @@
         </el-select>
         <el-button type="primary" @click="searchRecords">查询</el-button>
       </div>
-      <el-table :data="records" v-loading="logLoading" border stripe>
+      <el-table :data="records" v-loading="logLoading" border stripe :height="tableHeight">
         <el-table-column prop="couponNo" label="券编号" min-width="140" />
         <el-table-column prop="memberNo" label="用户ID" min-width="140">
           <template #default="{ row }">{{ row.memberNo || "-" }}</template>
@@ -88,7 +91,7 @@
         <el-table-column prop="expireTime" label="过期时间" min-width="170" />
         <el-table-column prop="createTime" label="发放时间" min-width="170" />
       </el-table>
-      <div class="pager">
+      <div class="pager" data-sticky-chrome>
         <el-pagination
           v-model:current-page="logPageNum"
           v-model:page-size="logPageSize"
@@ -187,8 +190,9 @@
 </template>
 
 <script setup lang="ts">
+import { useStickyTable } from "@/composables/useStickyTable";
 import OpBtn from "@/components/OpBtn.vue";
-import { computed, onMounted, reactive, ref } from "vue";
+import { computed, onMounted, reactive, ref, watch } from "vue";
 import { ElMessage } from "element-plus";
 import {
   createCouponTemplate,
@@ -201,7 +205,13 @@ import {
   type AdminCouponVO,
 } from "@/api/coupon";
 
+const { pageRef, tableHeight, syncTableHeightNextTick } = useStickyTable();
+
 const tab = ref("tpl");
+watch(tab, () => {
+  void syncTableHeightNextTick();
+});
+
 const templates = ref<AdminCouponTemplateVO[]>([]);
 const templateOptions = ref<AdminCouponTemplateVO[]>([]);
 const records = ref<AdminCouponVO[]>([]);
@@ -414,10 +424,11 @@ async function submitIssue() {
   }
 }
 
-onMounted(() => {
+onMounted(async () => {
   loadTemplateOptions();
   loadTemplates();
   loadRecords();
+  await syncTableHeightNextTick();
 });
 </script>
 
