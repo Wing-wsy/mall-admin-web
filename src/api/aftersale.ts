@@ -17,6 +17,8 @@ export interface AdminAfterSaleVO {
   orderId: number;
   orderNo?: string;
   memberNo?: string;
+  memberPhone?: string;
+  receiverPhone?: string;
   orderType?: number;
   orderStatus?: number;
   orderStatusText?: string;
@@ -55,6 +57,8 @@ export function fetchAfterSaleList(params?: {
   type?: number;
   orderNo?: string;
   afterSaleNo?: string;
+  memberPhone?: string;
+  receiverPhone?: string;
   pageNum?: number;
   pageSize?: number;
 }) {

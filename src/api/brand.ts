@@ -4,6 +4,8 @@ import type { PageResult } from "@/types/page";
 export interface BrandVO {
   id: number;
   name: string;
+  /** 首字母 A-Z，非字母为 # */
+  options?: string;
   sort: number;
   status: number;
 }
@@ -11,6 +13,8 @@ export interface BrandVO {
 export interface BrandOptionVO {
   id: number;
   name: string;
+  /** 首字母 A-Z，非字母为 # */
+  options?: string;
 }
 
 export interface BrandSavePayload {

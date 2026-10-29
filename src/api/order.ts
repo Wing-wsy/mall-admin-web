@@ -27,6 +27,7 @@ export interface AdminOrderItemVO {
 export interface AdminOrderVO {
   id: number;
   memberNo?: string;
+  memberPhone?: string;
   sellerMemberNo?: string;
   sellerLevelName?: string;
   orderNo: string;
@@ -93,6 +94,8 @@ export function fetchAdminOrderList(params?: {
   status?: number;
   orderType?: number;
   orderNo?: string;
+  memberPhone?: string;
+  receiverPhone?: string;
   supplierId?: number;
   pageNum?: number;
   pageSize?: number;

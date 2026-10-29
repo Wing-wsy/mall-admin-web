@@ -47,7 +47,14 @@
       </el-select>
       <el-select v-model="query.brandId" clearable filterable placeholder="品牌" style="width: 140px">
         <el-option label="无品牌" :value="0" />
-        <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id" />
+        <el-option v-for="b in brandOptions" :key="b.id" :label="b.name" :value="b.id">
+          <span class="brand-option">
+            <span>{{ b.name }}</span>
+            <span v-if="brandLetterVisible(brandOptions, b)" class="brand-option-letter">{{
+              b.options || ""
+            }}</span>
+          </span>
+        </el-option>
       </el-select>
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
@@ -180,7 +187,14 @@
             placeholder="可选，不选则不展示品牌"
             style="width: 100%"
           >
-            <el-option v-for="b in brandFormOptions" :key="b.id" :label="b.name" :value="b.id" />
+            <el-option v-for="b in brandFormOptions" :key="b.id" :label="b.name" :value="b.id">
+              <span class="brand-option">
+                <span>{{ b.name }}</span>
+                <span v-if="brandLetterVisible(brandFormOptions, b)" class="brand-option-letter">{{
+                  b.options || ""
+                }}</span>
+              </span>
+            </el-option>
           </el-select>
         </el-form-item>
         <el-form-item label="节日分类">
@@ -510,6 +524,7 @@
         </el-form-item>
         <el-form-item v-if="!userStore.isSupplier" label="状态">
           <el-radio-group v-model="form.status">
+            <el-radio :value="3">待上架</el-radio>
             <el-radio :value="1">上架</el-radio>
             <el-radio :value="0">下架</el-radio>
           </el-radio-group>
@@ -559,7 +574,7 @@ interface SkuRow {
   id?: number;
   attrValueIds: number[];
   attrText: string;
-  price: number;
+  price?: number;
   originPrice?: number;
   stock: number;
   coverUrl?: string;
@@ -651,7 +666,7 @@ const form = reactive({
   galleryUrls: [] as string[],
   detailHtml: "",
   detailImageUrls: [] as string[],
-  status: 1,
+  status: 3,
   categoryId: undefined as number | undefined,
   brandId: undefined as number | undefined,
   festivalIds: [] as number[],
@@ -670,7 +685,9 @@ const commonFreeShipProvinces = ref<string[]>([]);
 
 const saleAttrOptions = computed(() => saleAttrs.value);
 
-const enabledSkus = computed(() => form.skus.filter((row) => row.status === 1 && row.price > 0));
+const enabledSkus = computed(() =>
+  form.skus.filter((row) => row.status === 1 && row.price != null && row.price > 0),
+);
 
 const stockSum = computed(() =>
   form.skus.reduce((sum, row) => sum + (row.status === 1 ? Number(row.stock) || 0 : 0), 0),
@@ -774,6 +791,15 @@ async function loadTrees() {
   }
 }
 
+/** 同字母组仅首条显示右侧字母 */
+function brandLetterVisible(list: BrandOptionVO[], row: BrandOptionVO) {
+  const letter = row.options || "";
+  if (!letter) return false;
+  const idx = list.findIndex((b) => b.id === row.id);
+  if (idx <= 0) return true;
+  return (list[idx - 1]?.options || "") !== letter;
+}
+
 function attrNameOf(attrId: number) {
   return saleAttrs.value.find((a) => a.id === attrId)?.name || `属性${attrId}`;
 }
@@ -800,7 +826,7 @@ function emptySkuRow(attrValueIds: number[] = [], attrText = "默认"): SkuRow {
   return {
     attrValueIds: [...attrValueIds],
     attrText,
-    price: 1,
+    price: undefined,
     originPrice: undefined,
     stock: 0,
     coverUrl: "",
@@ -854,7 +880,7 @@ function generateSkus() {
       {
         ...emptySkuRow(),
         id: keep?.id,
-        price: keep?.price ?? 1,
+        price: keep?.price,
         originPrice: keep?.originPrice,
         stock: keep?.stock ?? 0,
         coverUrl: keep?.coverUrl || "",
@@ -1010,7 +1036,7 @@ function resetForm() {
   form.galleryUrls = [];
   form.detailHtml = "";
   form.detailImageUrls = [];
-  form.status = 1;
+  form.status = 3;
   form.categoryId = undefined;
   form.brandId = undefined;
   form.festivalIds = [];
@@ -1094,7 +1120,8 @@ async function openEdit(row: ProductVO) {
   form.categoryId = detail.categoryId;
   form.brandId = detail.brandId ?? undefined;
   if (detail.brandId && detail.brandName && !brandFormOptions.value.some((b) => b.id === detail.brandId)) {
-    brandFormOptions.value = [{ id: detail.brandId, name: detail.brandName }, ...brandFormOptions.value];
+    // 停用品牌仍展示在选项末尾，不打乱已启用列表的 options 排序
+    brandFormOptions.value = [...brandFormOptions.value, { id: detail.brandId, name: detail.brandName }];
   }
   form.festivalIds = [...(detail.festivalIds || [])];
   form.stockAlertQty = detail.stockAlertQty ?? undefined;
@@ -1368,7 +1395,7 @@ async function save() {
         id: row.id,
         attrValueIds: [...(row.attrValueIds || [])],
         attrText: row.attrText || undefined,
-        price: row.price,
+        price: Number(row.price),
         originPrice: row.originPrice,
         stock: row.stock ?? 0,
         coverUrl: row.coverUrl || undefined,
@@ -1551,5 +1578,18 @@ onMounted(async () => {
   min-width: 72px;
   color: #374151;
   font-size: 13px;
+}
+.brand-option {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  width: 100%;
+}
+.brand-option-letter {
+  flex-shrink: 0;
+  color: #9ca3af;
+  font-size: 12px;
+  font-weight: 600;
 }
 </style>

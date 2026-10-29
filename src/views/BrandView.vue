@@ -7,6 +7,7 @@
     <el-table :data="list" v-loading="loading" border stripe>
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="名称" min-width="160" />
+      <el-table-column prop="options" label="字母" width="80" />
       <el-table-column prop="sort" label="排序" width="90" />
       <el-table-column label="状态" width="100">
         <template #default="{ row }">
@@ -46,7 +47,7 @@
         </el-form-item>
         <el-form-item label="排序">
           <el-input-number v-model="form.sort" :min="0" />
-          <span class="tip">越大越靠前</span>
+          <span class="tip">越大越靠前（同字母内）</span>
         </el-form-item>
         <el-form-item label="状态">
           <el-radio-group v-model="form.status">
