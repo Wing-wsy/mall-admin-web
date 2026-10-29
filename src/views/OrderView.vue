@@ -93,23 +93,25 @@
         <template #default="{ row }">{{ row.receiverPhone || "-" }}</template>
       </el-table-column>
       <el-table-column prop="createTime" label="下单时间" min-width="170" />
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="380" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-          <el-button
-            v-if="canAdjustPay(row)"
-            link
-            type="warning"
-            @click="openAdjust(row)"
-          >
-            改价
-          </el-button>
-          <el-button v-if="row.status === 20 && !isAfterSaleOpen(row)" link type="primary" @click="onShip(row)">
-            发货
-          </el-button>
-          <el-button v-if="row.canDirectRefund" link type="danger" @click="onDirectRefund(row)">主动退款</el-button>
-          <el-button v-if="row.status === 10" link type="danger" @click="onCancel(row)">取消</el-button>
-          <el-button v-if="row.afterSaleId" link type="primary" @click="goAfterSale(row)">售后</el-button>
+          <div class="table-ops">
+            <OpBtn icon="View" @click="openDetail(row)">详情</OpBtn>
+            <OpBtn v-if="canAdjustPay(row)" icon="EditPen" variant="warn" @click="openAdjust(row)">改价</OpBtn>
+            <OpBtn
+              v-if="row.status === 20 && !isAfterSaleOpen(row)"
+              icon="Van"
+              variant="solid"
+              @click="onShip(row)"
+            >
+              发货
+            </OpBtn>
+            <OpBtn v-if="row.canDirectRefund" icon="RefreshLeft" variant="danger" @click="onDirectRefund(row)">
+              主动退款
+            </OpBtn>
+            <OpBtn v-if="row.status === 10" icon="CloseBold" variant="danger" @click="onCancel(row)">取消</OpBtn>
+            <OpBtn v-if="row.afterSaleId" icon="Service" @click="goAfterSale(row)">售后</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -343,6 +345,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage, ElMessageBox } from "element-plus";

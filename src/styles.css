@@ -15,3 +15,85 @@ body,
   height: 100%;
   overflow: hidden;
 }
+
+/* 表格操作列：圆角图标按钮 */
+.table-ops {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.op-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  height: 28px;
+  padding: 0 10px;
+  border-radius: 6px;
+  border: 1px solid transparent;
+  font-size: 13px;
+  line-height: 1;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background-color 0.15s ease, border-color 0.15s ease, color 0.15s ease,
+    opacity 0.15s ease;
+}
+
+.op-btn .el-icon {
+  font-size: 14px;
+}
+
+.op-btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.op-btn--solid {
+  background: #0e7052;
+  border-color: #0e7052;
+  color: #fff;
+}
+
+.op-btn--solid:hover:not(:disabled) {
+  background: #0b5c43;
+  border-color: #0b5c43;
+  color: #fff;
+}
+
+.op-btn--soft {
+  background: #e8f5f0;
+  border-color: #b7d9cc;
+  color: #0e7052;
+}
+
+.op-btn--soft:hover:not(:disabled) {
+  background: #d7eee5;
+  border-color: #96c7b6;
+  color: #0b5c43;
+}
+
+.op-btn--danger {
+  background: #fff1f1;
+  border-color: #f3c1c1;
+  color: #d64545;
+}
+
+.op-btn--danger:hover:not(:disabled) {
+  background: #ffe4e4;
+  border-color: #e8a3a3;
+  color: #c03939;
+}
+
+.op-btn--warn {
+  background: #fff7e8;
+  border-color: #f0d4a0;
+  color: #c47d12;
+}
+
+.op-btn--warn:hover:not(:disabled) {
+  background: #ffefd2;
+  border-color: #e6c07a;
+  color: #a8680c;
+}

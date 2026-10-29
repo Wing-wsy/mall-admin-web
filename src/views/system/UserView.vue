@@ -39,11 +39,19 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "正常" : "停用" }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="260" fixed="right">
+      <el-table-column label="操作" width="340" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
-          <el-button link @click="onResetPwd(row)">重置密码</el-button>
+          <div class="table-ops">
+            <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+            <OpBtn
+              :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+              :variant="row.status === 1 ? 'danger' : 'solid'"
+              @click="toggleStatus(row)"
+            >
+              {{ row.status === 1 ? "停用" : "启用" }}
+            </OpBtn>
+            <OpBtn icon="Key" variant="warn" @click="onResetPwd(row)">重置密码</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -87,6 +95,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {

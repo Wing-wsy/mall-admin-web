@@ -37,13 +37,15 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="申请时间" min-width="170" />
-      <el-table-column v-if="!userStore.isSupplier" label="操作" width="320" fixed="right">
+      <el-table-column v-if="!userStore.isSupplier" label="操作" width="400" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">修改</el-button>
-          <el-button v-if="row.status === 0" link type="success" @click="onApprove(row)">通过</el-button>
-          <el-button v-if="row.status === 0" link type="danger" @click="onReject(row)">拒绝</el-button>
-          <el-button v-if="row.status === 1" link @click="onResetPwd(row)">重置密码</el-button>
-          <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+          <div class="table-ops">
+            <OpBtn v-if="row.status === 0" icon="Select" variant="solid" @click="onApprove(row)">通过</OpBtn>
+            <OpBtn icon="Edit" @click="openEdit(row)">修改</OpBtn>
+            <OpBtn v-if="row.status === 1" icon="Key" variant="warn" @click="onResetPwd(row)">重置密码</OpBtn>
+            <OpBtn v-if="row.status === 0" icon="CloseBold" variant="danger" @click="onReject(row)">拒绝</OpBtn>
+            <OpBtn icon="Delete" variant="danger" @click="onDelete(row)">删除</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -100,6 +102,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {

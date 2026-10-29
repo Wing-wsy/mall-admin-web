@@ -34,10 +34,12 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "正常" : "停用" }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="240" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑/授权</el-button>
-          <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+          <div class="table-ops">
+            <OpBtn icon="Edit" @click="openEdit(row)">编辑/授权</OpBtn>
+            <OpBtn icon="Delete" variant="danger" @click="onDelete(row)">删除</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -87,6 +89,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { nextTick, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox, type ElTree } from "element-plus";
 import {

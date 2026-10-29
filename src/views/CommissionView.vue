@@ -68,9 +68,11 @@
         <template #default="{ row }">{{ row.finishTime || "-" }}</template>
       </el-table-column>
       <el-table-column prop="createTime" label="下单时间" min-width="170" />
-      <el-table-column label="操作" width="120" fixed="right">
+      <el-table-column label="操作" width="140" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">订单详情</el-button>
+          <div class="table-ops">
+            <OpBtn icon="View" @click="openDetail(row)">订单详情</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -134,6 +136,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import { fetchAdminCommissionList, type AdminCommissionVO } from "@/api/commission";

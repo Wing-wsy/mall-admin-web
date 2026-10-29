@@ -60,11 +60,19 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "启用" : "停用" }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
-            <el-button link type="danger" @click="onDeleteLevel(row)">删除</el-button>
+            <div class="table-ops">
+              <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+              <OpBtn
+                :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+                :variant="row.status === 1 ? 'danger' : 'solid'"
+                @click="toggleStatus(row)"
+              >
+                {{ row.status === 1 ? "停用" : "启用" }}
+              </OpBtn>
+              <OpBtn icon="Delete" variant="danger" @click="onDeleteLevel(row)">删除</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -99,10 +107,12 @@
           <template #default="{ row }">{{ row.memberNo || "-" }}</template>
         </el-table-column>
         <el-table-column prop="createTime" label="添加时间" min-width="170" />
-        <el-table-column label="操作" width="160" fixed="right">
+        <el-table-column label="操作" width="220" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openPhoneEdit(row)">改等级</el-button>
-            <el-button link type="danger" @click="onDeletePhone(row)">删除</el-button>
+            <div class="table-ops">
+              <OpBtn icon="Edit" @click="openPhoneEdit(row)">改等级</OpBtn>
+              <OpBtn icon="Delete" variant="danger" @click="onDeletePhone(row)">删除</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -144,14 +154,21 @@
         </el-table-column>
         <el-table-column prop="remark" label="备注" min-width="120" />
         <el-table-column prop="createTime" label="生成时间" min-width="170" />
-        <el-table-column label="操作" width="280" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="copyText(row.urlLink || row.miniPath)">复制链接</el-button>
-            <el-button link @click="copyText(row.miniPath)">复制路径</el-button>
-            <el-button link @click="openInviteLogs(row)">记录</el-button>
-            <el-button v-if="row.status === 1 && row.statusText === '有效'" link type="danger" @click="onRevokeInvite(row)">
-              作废
-            </el-button>
+            <div class="table-ops">
+              <OpBtn icon="DocumentCopy" @click="copyText(row.urlLink || row.miniPath)">复制链接</OpBtn>
+              <OpBtn icon="DocumentCopy" @click="copyText(row.miniPath)">复制路径</OpBtn>
+              <OpBtn icon="Notebook" @click="openInviteLogs(row)">记录</OpBtn>
+              <OpBtn
+                v-if="row.status === 1 && row.statusText === '有效'"
+                icon="Delete"
+                variant="danger"
+                @click="onRevokeInvite(row)"
+              >
+                作废
+              </OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -340,6 +357,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";

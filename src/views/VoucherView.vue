@@ -36,12 +36,20 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "启用" : "停用" }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="330" fixed="right">
+        <el-table-column label="操作" width="380" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
-            <el-button link type="primary" @click="openGenerate(row)">生成码</el-button>
-            <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+            <div class="table-ops">
+              <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+              <OpBtn
+                :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+                :variant="row.status === 1 ? 'danger' : 'solid'"
+                @click="toggleStatus(row)"
+              >
+                {{ row.status === 1 ? "停用" : "启用" }}
+              </OpBtn>
+              <OpBtn icon="Ticket" @click="openGenerate(row)">生成码</OpBtn>
+              <OpBtn icon="Delete" variant="danger" @click="onDelete(row)">删除</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -91,9 +99,11 @@
           <template #default="{ row }">{{ row.orderNo || "-" }}</template>
         </el-table-column>
         <el-table-column prop="redeemedAt" label="核销时间" min-width="170" />
-        <el-table-column label="操作" width="90" fixed="right">
+        <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button v-if="row.status === 0" link type="danger" @click="onVoid(row)">作废</el-button>
+            <div class="table-ops">
+              <OpBtn v-if="row.status === 0" icon="Delete" variant="danger" @click="onVoid(row)">作废</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -177,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {

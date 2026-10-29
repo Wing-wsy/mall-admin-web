@@ -32,11 +32,13 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="300" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button v-if="!row.active" link type="primary" @click="onActivate(row)">启用此套</el-button>
-          <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+          <div class="table-ops">
+            <OpBtn v-if="!row.active" icon="Select" variant="solid" @click="onActivate(row)">启用此套</OpBtn>
+            <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+            <OpBtn icon="Delete" variant="danger" @click="onDelete(row)">删除</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -130,6 +132,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";

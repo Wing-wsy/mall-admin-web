@@ -70,32 +70,32 @@
           <span v-else>-</span>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button
-            v-if="userStore.hasPermission('system:cache:get')"
-            link
-            type="primary"
-            @click="openDetail(row)"
-          >
-            查看
-          </el-button>
-          <el-button
-            v-if="userStore.hasPermission('system:cache:set') && !row.protectedKey"
-            link
-            type="primary"
-            @click="openEdit(row)"
-          >
-            编辑
-          </el-button>
-          <el-button
-            v-if="userStore.hasPermission('system:cache:delete') && !row.protectedKey"
-            link
-            type="danger"
-            @click="onDelete(row)"
-          >
-            删除
-          </el-button>
+          <div class="table-ops">
+            <OpBtn
+              v-if="userStore.hasPermission('system:cache:get')"
+              icon="View"
+              @click="openDetail(row)"
+            >
+              查看
+            </OpBtn>
+            <OpBtn
+              v-if="userStore.hasPermission('system:cache:set') && !row.protectedKey"
+              icon="Edit"
+              @click="openEdit(row)"
+            >
+              编辑
+            </OpBtn>
+            <OpBtn
+              v-if="userStore.hasPermission('system:cache:delete') && !row.protectedKey"
+              icon="Delete"
+              variant="danger"
+              @click="onDelete(row)"
+            >
+              删除
+            </OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -177,6 +177,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import {

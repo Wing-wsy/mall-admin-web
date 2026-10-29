@@ -66,9 +66,11 @@
       <el-table-column prop="costMs" label="耗时" width="80">
         <template #default="{ row }">{{ row.costMs != null ? row.costMs + "ms" : "-" }}</template>
       </el-table-column>
-      <el-table-column label="详情" width="80" fixed="right">
+      <el-table-column label="详情" width="120" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">查看</el-button>
+          <div class="table-ops">
+            <OpBtn icon="View" @click="openDetail(row)">查看</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -115,6 +117,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { fetchOperLogList, type OperLogVO } from "@/api/operLog";
 

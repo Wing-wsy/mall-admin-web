@@ -3,6 +3,14 @@
     <div class="toolbar">
       <el-button type="primary" @click="openCreate">新增商品</el-button>
       <el-button @click="load">刷新</el-button>
+      <el-button
+        v-if="userStore.hasPermission('product:delete')"
+        type="danger"
+        :disabled="!selectedDeletable.length"
+        @click="onBatchDelete"
+      >
+        批量删除
+      </el-button>
       <el-input
         v-model="query.name"
         clearable
@@ -59,7 +67,20 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
-    <el-table :data="list" v-loading="loading" border stripe>
+    <el-table
+      :data="list"
+      v-loading="loading"
+      border
+      stripe
+      row-key="id"
+      @selection-change="onSelectionChange"
+    >
+      <el-table-column
+        v-if="userStore.hasPermission('product:delete')"
+        type="selection"
+        width="48"
+        :selectable="isRowSelectable"
+      />
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="90">
         <template #default="{ row }">
@@ -116,33 +137,55 @@
           <div v-if="row.status === 4 && row.auditRemark" class="reject-reason">{{ row.auditRemark }}</div>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="320" fixed="right">
+      <el-table-column label="操作" width="420" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button v-if="row.status === 1" link type="danger" @click="toggleStatus(row, 0)">下架</el-button>
-          <el-button v-if="row.status === 0 || row.status === 3" link type="success" @click="toggleStatus(row, 1)">
-            上架
-          </el-button>
-          <el-button
-            v-if="row.status === 2 && userStore.hasPermission('product:approve')"
-            link
-            type="success"
-            @click="onApprove(row)"
-          >
-            通过
-          </el-button>
-          <el-button
-            v-if="row.status === 2 && userStore.hasPermission('product:approve')"
-            link
-            type="danger"
-            @click="onReject(row)"
-          >
-            拒绝
-          </el-button>
-          <el-button v-if="row.status === 4 && userStore.isSupplier" link type="warning" @click="onSubmit(row)">
-            再次提交
-          </el-button>
+          <div class="table-ops">
+            <OpBtn
+              v-if="row.status === 2 && userStore.hasPermission('product:approve')"
+              icon="Select"
+              variant="solid"
+              @click="onApprove(row)"
+            >
+              通过
+            </OpBtn>
+            <OpBtn
+              v-if="row.status === 0 || row.status === 3"
+              icon="Top"
+              variant="solid"
+              @click="toggleStatus(row, 1)"
+            >
+              上架
+            </OpBtn>
+            <OpBtn icon="View" @click="openDetail(row)">详情</OpBtn>
+            <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+            <OpBtn v-if="row.status === 1" icon="Bottom" variant="danger" @click="toggleStatus(row, 0)">
+              下架
+            </OpBtn>
+            <OpBtn
+              v-if="row.status === 2 && userStore.hasPermission('product:approve')"
+              icon="CloseBold"
+              variant="danger"
+              @click="onReject(row)"
+            >
+              拒绝
+            </OpBtn>
+            <OpBtn
+              v-if="row.status === 4 && userStore.isSupplier"
+              icon="RefreshRight"
+              variant="warn"
+              @click="onSubmit(row)"
+            >
+              再次提交
+            </OpBtn>
+            <OpBtn
+              v-if="row.status !== 1 && userStore.hasPermission('product:delete')"
+              icon="Delete"
+              variant="danger"
+              @click="onDelete(row)"
+            >
+              删除
+            </OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -543,6 +586,7 @@
 <script setup lang="ts">
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
+import OpBtn from "@/components/OpBtn.vue";
 import ProductDetailDialog from "@/components/ProductDetailDialog.vue";
 import type { UploadRequestOptions } from "element-plus";
 import { useUserStore } from "@/stores/user";
@@ -558,6 +602,8 @@ import {
   fetchProductDetail,
   fetchProductList,
   rejectProduct,
+  batchDeleteProducts,
+  deleteProduct,
   submitProduct,
   updateProduct,
   updateProductStatus,
@@ -627,6 +673,8 @@ const festivalCascaderProps = {
 
 const userStore = useUserStore();
 const list = ref<ProductVO[]>([]);
+const selectedRows = ref<ProductVO[]>([]);
+const selectedDeletable = computed(() => selectedRows.value.filter((row) => row.status !== 1));
 const total = ref(0);
 const pageNum = ref(1);
 const pageSize = ref(10);
@@ -1001,6 +1049,7 @@ async function load() {
     });
     list.value = data.data?.records || [];
     total.value = data.data?.total || 0;
+    selectedRows.value = [];
   } finally {
     loading.value = false;
   }
@@ -1437,6 +1486,46 @@ async function toggleStatus(row: ProductVO, next: number) {
   });
   await updateProductStatus(row.id, next);
   ElMessage.success(next === 1 ? "已上架" : "已下架");
+  await load();
+}
+
+function isRowSelectable(row: ProductVO) {
+  return row.status !== 1;
+}
+
+function onSelectionChange(rows: ProductVO[]) {
+  selectedRows.value = rows;
+}
+
+async function onDelete(row: ProductVO) {
+  if (row.status === 1) {
+    ElMessage.warning("请先下架后再删除");
+    return;
+  }
+  await ElMessageBox.confirm(
+    `确认删除商品「${row.name}」？删除后不可在商品列表中恢复，历史订单仍可查看。`,
+    "删除商品",
+    { type: "warning", confirmButtonText: "删除", cancelButtonText: "取消" },
+  );
+  await deleteProduct(row.id);
+  ElMessage.success("已删除");
+  selectedRows.value = [];
+  await load();
+}
+
+async function onBatchDelete() {
+  const rows = selectedDeletable.value;
+  if (!rows.length) {
+    return;
+  }
+  await ElMessageBox.confirm(
+    `确认删除选中的 ${rows.length} 个商品？删除后不可在商品列表中恢复，历史订单仍可查看。`,
+    "批量删除",
+    { type: "warning", confirmButtonText: "删除", cancelButtonText: "取消" },
+  );
+  await batchDeleteProducts(rows.map((row) => row.id));
+  ElMessage.success("已删除");
+  selectedRows.value = [];
   await load();
 }
 

@@ -17,12 +17,19 @@
           <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "正常" : "停用" }}</el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="200" fixed="right">
+      <el-table-column label="操作" width="240" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" :disabled="row.type === 1" @click="openEdit(row)">编辑</el-button>
-          <el-button link :disabled="row.type === 1" @click="toggleStatus(row)">
-            {{ row.status === 1 ? "停用" : "启用" }}
-          </el-button>
+          <div class="table-ops">
+            <OpBtn icon="Edit" :disabled="row.type === 1" @click="openEdit(row)">编辑</OpBtn>
+            <OpBtn
+              :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+              :variant="row.status === 1 ? 'danger' : 'solid'"
+              :disabled="row.type === 1"
+              @click="toggleStatus(row)"
+            >
+              {{ row.status === 1 ? "停用" : "启用" }}
+            </OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -51,6 +58,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import { createTenant, fetchTenantList, updateTenant, updateTenantStatus, type TenantVO } from "@/api/tenant";

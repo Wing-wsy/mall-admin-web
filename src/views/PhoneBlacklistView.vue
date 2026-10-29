@@ -21,14 +21,16 @@
       <el-table-column prop="createTime" label="拉黑时间" min-width="170" />
       <el-table-column label="操作" width="120" fixed="right">
         <template #default="{ row }">
-          <el-button
-            v-if="userStore.hasPermission('blacklist:delete')"
-            link
-            type="danger"
-            @click="onDelete(row)"
-          >
-            移出
-          </el-button>
+          <div class="table-ops">
+            <OpBtn
+              v-if="userStore.hasPermission('blacklist:delete')"
+              icon="Delete"
+              variant="danger"
+              @click="onDelete(row)"
+            >
+              移出
+            </OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -66,6 +68,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules } from "element-plus";
 import {

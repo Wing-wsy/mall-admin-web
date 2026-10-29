@@ -125,14 +125,16 @@
         <el-table-column prop="createTime" label="添加时间" min-width="170" />
         <el-table-column label="操作" width="120" fixed="right">
           <template #default="{ row }">
-            <el-button
-              v-if="userStore.hasPermission('shop:update')"
-              link
-              type="danger"
-              @click="onDeleteWhitelist(row)"
-            >
-              移出
-            </el-button>
+            <div class="table-ops">
+              <OpBtn
+                v-if="userStore.hasPermission('shop:update')"
+                icon="Delete"
+                variant="danger"
+                @click="onDeleteWhitelist(row)"
+              >
+                移出
+              </OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -408,6 +410,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref, watch } from "vue";
 import { ElMessage, ElMessageBox, type FormInstance, type FormRules, type UploadRequestOptions } from "element-plus";
 import {

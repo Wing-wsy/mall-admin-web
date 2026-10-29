@@ -59,11 +59,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="申请时间" min-width="170" />
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="280" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-          <el-button v-if="row.canApprove" link type="primary" @click="openDetail(row)">审核</el-button>
-          <el-button v-if="row.canReceive" link type="primary" @click="openDetail(row)">收货</el-button>
+          <div class="table-ops">
+            <OpBtn v-if="row.canApprove" icon="Select" variant="solid" @click="openDetail(row)">审核</OpBtn>
+            <OpBtn v-if="row.canReceive" icon="Box" variant="solid" @click="openDetail(row)">收货</OpBtn>
+            <OpBtn icon="View" @click="openDetail(row)">详情</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -159,13 +161,19 @@
             </el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="200" fixed="right">
+        <el-table-column label="操作" width="280" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openReasonEdit(row)">编辑</el-button>
-            <el-button link @click="toggleReasonStatus(row)">
-              {{ row.status === 1 ? "停用" : "启用" }}
-            </el-button>
-            <el-button link type="danger" @click="onDeleteReason(row)">删除</el-button>
+            <div class="table-ops">
+              <OpBtn icon="Edit" @click="openReasonEdit(row)">编辑</OpBtn>
+              <OpBtn
+                :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+                :variant="row.status === 1 ? 'danger' : 'solid'"
+                @click="toggleReasonStatus(row)"
+              >
+                {{ row.status === 1 ? "停用" : "启用" }}
+              </OpBtn>
+              <OpBtn icon="Delete" variant="danger" @click="onDeleteReason(row)">删除</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -196,6 +204,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import { useUserStore } from "@/stores/user";

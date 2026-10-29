@@ -168,6 +168,14 @@ export function updateProductStatus(id: number, status: number) {
   return request.put<ApiResult<null>>(`/api/admin/product/${id}/status`, { status });
 }
 
+export function deleteProduct(id: number) {
+  return request.delete<ApiResult<null>>(`/api/admin/product/${id}`);
+}
+
+export function batchDeleteProducts(ids: number[]) {
+  return request.post<ApiResult<null>>("/api/admin/product/batch-delete", { ids });
+}
+
 export function approveProduct(id: number) {
   return request.post<ApiResult<ProductVO>>(`/api/admin/product/${id}/approve`);
 }

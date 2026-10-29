@@ -31,11 +31,19 @@
             <el-tag :type="row.status === 1 ? 'success' : 'info'">{{ row.status === 1 ? "启用" : "停用" }}</el-tag>
           </template>
         </el-table-column>
-        <el-table-column label="操作" width="220" fixed="right">
+        <el-table-column label="操作" width="300" fixed="right">
           <template #default="{ row }">
-            <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-            <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
-            <el-button link type="primary" @click="openIssue(row)">发券</el-button>
+            <div class="table-ops">
+              <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+              <OpBtn
+                :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+                :variant="row.status === 1 ? 'danger' : 'solid'"
+                @click="toggleStatus(row)"
+              >
+                {{ row.status === 1 ? "停用" : "启用" }}
+              </OpBtn>
+              <OpBtn icon="Ticket" @click="openIssue(row)">发券</OpBtn>
+            </div>
           </template>
         </el-table-column>
       </el-table>
@@ -179,6 +187,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage } from "element-plus";
 import {

@@ -42,19 +42,26 @@
           </el-tag>
         </template>
       </el-table-column>
-      <el-table-column label="操作" width="300" fixed="right">
+      <el-table-column label="操作" width="380" fixed="right">
         <template #default="{ row }">
-          <el-button
-            v-if="(row.level || 1) < MAX_LEVEL"
-            link
-            type="primary"
-            @click="openCreateChild(row)"
-          >
-            添加子分类
-          </el-button>
-          <el-button link type="primary" @click="openEdit(row)">编辑</el-button>
-          <el-button link @click="toggleStatus(row)">{{ row.status === 1 ? "停用" : "启用" }}</el-button>
-          <el-button link type="danger" @click="onDelete(row)">删除</el-button>
+          <div class="table-ops">
+            <OpBtn
+              v-if="(row.level || 1) < MAX_LEVEL"
+              icon="Plus"
+              @click="openCreateChild(row)"
+            >
+              添加子分类
+            </OpBtn>
+            <OpBtn icon="Edit" @click="openEdit(row)">编辑</OpBtn>
+            <OpBtn
+              :icon="row.status === 1 ? 'CircleClose' : 'Select'"
+              :variant="row.status === 1 ? 'danger' : 'solid'"
+              @click="toggleStatus(row)"
+            >
+              {{ row.status === 1 ? "停用" : "启用" }}
+            </OpBtn>
+            <OpBtn icon="Delete" variant="danger" @click="onDelete(row)">删除</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -123,6 +130,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { computed, onMounted, reactive, ref } from "vue";
 import { ElMessage, ElMessageBox } from "element-plus";
 import type { UploadRequestOptions } from "element-plus";

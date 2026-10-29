@@ -48,11 +48,13 @@
         </template>
       </el-table-column>
       <el-table-column prop="createTime" label="注册时间" min-width="170" />
-      <el-table-column label="操作" width="220" fixed="right">
+      <el-table-column label="操作" width="320" fixed="right">
         <template #default="{ row }">
-          <el-button link type="primary" @click="openDetail(row)">详情</el-button>
-          <el-button link type="primary" @click="openLogs(row)">资金流水</el-button>
-          <el-button link type="primary" @click="openIssue(row)">发券</el-button>
+          <div class="table-ops">
+            <OpBtn icon="View" @click="openDetail(row)">详情</OpBtn>
+            <OpBtn icon="Wallet" @click="openLogs(row)">资金流水</OpBtn>
+            <OpBtn icon="Ticket" @click="openIssue(row)">发券</OpBtn>
+          </div>
         </template>
       </el-table-column>
     </el-table>
@@ -147,6 +149,7 @@
 </template>
 
 <script setup lang="ts">
+import OpBtn from "@/components/OpBtn.vue";
 import { onMounted, ref } from "vue";
 import { useRouter } from "vue-router";
 import { ElMessage } from "element-plus";
