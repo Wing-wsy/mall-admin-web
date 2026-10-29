@@ -10,7 +10,8 @@ export function useStickyTable(options?: { minHeight?: number; gap?: number }) {
   const pagerRef = ref<HTMLElement>();
   const tableHeight = ref(480);
   const minHeight = options?.minHeight ?? 280;
-  const gap = options?.gap ?? 24;
+  /** 卡片间距 + page-body 内边距等余量 */
+  const gap = options?.gap ?? 40;
 
   function measureChrome(): number {
     if (pageRef.value) {
@@ -29,13 +30,19 @@ export function useStickyTable(options?: { minHeight?: number; gap?: number }) {
   }
 
   function syncTableHeight() {
-    const main = document.querySelector(".layout .main") as HTMLElement | null;
-    if (!main) {
+    const panel =
+      (document.querySelector(".layout .main-panel") as HTMLElement | null) ||
+      (document.querySelector(".layout .main") as HTMLElement | null);
+    if (!panel) {
       return;
     }
-    const style = getComputedStyle(main);
-    const padY = (parseFloat(style.paddingTop) || 0) + (parseFloat(style.paddingBottom) || 0);
-    tableHeight.value = Math.max(minHeight, Math.floor(main.clientHeight - padY - measureChrome() - gap));
+    const main = document.querySelector(".layout .main") as HTMLElement | null;
+    const mainStyle = main ? getComputedStyle(main) : null;
+    const padY = mainStyle
+      ? (parseFloat(mainStyle.paddingTop) || 0) + (parseFloat(mainStyle.paddingBottom) || 0)
+      : 0;
+    const available = main ? main.clientHeight - padY : panel.clientHeight;
+    tableHeight.value = Math.max(minHeight, Math.floor(available - measureChrome() - gap));
   }
 
   async function syncTableHeightNextTick() {

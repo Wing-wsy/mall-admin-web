@@ -20,6 +20,7 @@
       </el-select>
       <el-button type="primary" @click="search">查询</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="orderNo" label="订单号" min-width="180" />
       <el-table-column v-if="kind === 'share'" prop="uplineMemberNo" label="上线会员" min-width="140">
@@ -88,6 +89,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="订单详情" width="720px">

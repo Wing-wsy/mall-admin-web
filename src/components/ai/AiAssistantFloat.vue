@@ -229,9 +229,9 @@ onUnmounted(() => {
   height: 56px;
   border: none;
   border-radius: 50%;
-  background: #2563eb;
+  background: var(--mall-color-primary);
   color: #fff;
-  box-shadow: 0 6px 20px rgba(37, 99, 235, 0.35);
+  box-shadow: 0 6px 20px color-mix(in srgb, var(--mall-color-primary) 35%, transparent);
   cursor: grab;
   display: flex;
   align-items: center;
@@ -242,7 +242,7 @@ onUnmounted(() => {
 }
 
 .ai-fab:hover {
-  box-shadow: 0 8px 24px rgba(37, 99, 235, 0.45);
+  box-shadow: 0 8px 24px color-mix(in srgb, var(--mall-color-primary) 45%, transparent);
 }
 
 .ai-fab.dragging {

@@ -14,7 +14,8 @@
         <el-button type="primary" @click="openCreate">新增等级</el-button>
         <el-button @click="loadLevels">刷新</el-button>
       </div>
-      <el-table :data="levels" v-loading="levelLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="levels" v-loading="levelLoading" border stripe :height="tableHeight">
         <el-table-column label="图标" width="90">
           <template #default="{ row }">
             <el-image v-if="row.iconUrl" :src="row.iconUrl" style="width: 40px; height: 40px" fit="cover" />
@@ -92,6 +93,7 @@
         />
       </div>
     </div>
+    </div>
 
     <div v-show="tab === 'phone'">
       <div class="toolbar" data-sticky-chrome>
@@ -103,7 +105,8 @@
         <el-button type="primary" @click="openPhoneCreate">新增</el-button>
         <el-button @click="openPhoneBatch">批量新增</el-button>
       </div>
-      <el-table :data="phones" v-loading="phoneLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="phones" v-loading="phoneLoading" border stripe :height="tableHeight">
         <el-table-column prop="phone" label="手机号" width="140" />
         <el-table-column prop="levelName" label="等级" min-width="120" />
         <el-table-column label="已注册用户" min-width="140">
@@ -132,6 +135,7 @@
         />
       </div>
     </div>
+    </div>
 
     <div v-show="tab === 'invite'">
       <div class="toolbar" data-sticky-chrome>
@@ -141,7 +145,8 @@
         <el-button type="primary" @click="searchInvites">查询</el-button>
         <el-button type="primary" @click="openInviteCreate">生成链接</el-button>
       </div>
-      <el-table :data="invites" v-loading="inviteLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="invites" v-loading="inviteLoading" border stripe :height="tableHeight">
         <el-table-column prop="levelName" label="等级" width="120" />
         <el-table-column prop="expireAt" label="失效时间" min-width="170" />
         <el-table-column label="状态" width="90">
@@ -187,6 +192,7 @@
           @size-change="searchInvites"
         />
       </div>
+    </div>
     </div>
 
     <el-dialog v-model="levelVisible" :title="levelForm.id ? '编辑等级' : '新增等级'" width="560px">

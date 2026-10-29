@@ -10,7 +10,7 @@
           </span>
         </p>
       </div>
-      <el-radio-group v-model="range" size="default" @change="load">
+      <el-radio-group class="range-pills" v-model="range" size="default" @change="load">
         <el-radio-button value="today">今日</el-radio-button>
         <el-radio-button value="yesterday">昨日</el-radio-button>
         <el-radio-button value="before">前日</el-radio-button>
@@ -105,7 +105,7 @@
 </template>
 
 <script setup lang="ts">
-import { nextTick, onBeforeUnmount, onMounted, ref } from "vue";
+import { nextTick, onBeforeUnmount, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router";
 import * as echarts from "echarts/core";
 import { BarChart, LineChart, PieChart } from "echarts/charts";
@@ -120,6 +120,7 @@ import {
   type DashboardOverviewVO,
   type DashboardRange,
 } from "@/api/dashboard";
+import { useThemeStore } from "@/stores/theme";
 
 echarts.use([
   BarChart,
@@ -132,6 +133,7 @@ echarts.use([
 ]);
 
 const router = useRouter();
+const themeStore = useThemeStore();
 const loading = ref(false);
 const range = ref<DashboardRange>("today");
 const overview = ref<DashboardOverviewVO | null>(null);
@@ -194,98 +196,131 @@ function ensureCharts() {
   }
 }
 
+function chartTheme() {
+  const style = getComputedStyle(document.documentElement);
+  const primary = style.getPropertyValue("--mall-color-primary").trim() || "#2563eb";
+  const text = style.getPropertyValue("--mall-text-secondary").trim() || "#6b7280";
+  const muted = style.getPropertyValue("--mall-text-secondary").trim() || "#9ca3af";
+  const border = style.getPropertyValue("--mall-border").trim() || "#e5e7eb";
+  const isDark = themeStore.mode === "dark";
+  return {
+    primary,
+    text,
+    muted,
+    border,
+    split: isDark ? "#262b35" : "#f3f4f6",
+    legend: isDark ? "#c9ced6" : "#4b5563",
+    label: isDark ? "#c9ced6" : "#374151",
+  };
+}
+
 function renderCharts() {
   ensureCharts();
   const series = overview.value?.series || [];
   const labels = series.map((p) => p.label);
   const gmv = series.map((p) => Number(p.gmv || 0));
   const counts = series.map((p) => p.orderCount || 0);
+  const t = chartTheme();
 
-  trendChart?.setOption({
-    color: ["#2563eb", "#fb923c"],
-    tooltip: { trigger: "axis" },
-    legend: { data: ["成交额", "成交单"], top: 0 },
-    grid: { left: 48, right: 48, top: 40, bottom: 28 },
-    xAxis: {
-      type: "category",
-      data: labels,
-      axisLine: { lineStyle: { color: "#e5e7eb" } },
-      axisLabel: { color: "#6b7280" },
+  trendChart?.setOption(
+    {
+      color: [t.primary, "#fb923c"],
+      backgroundColor: "transparent",
+      tooltip: { trigger: "axis" },
+      legend: { data: ["成交额", "成交单"], top: 0, textStyle: { color: t.legend } },
+      grid: { left: 48, right: 48, top: 40, bottom: 28 },
+      xAxis: {
+        type: "category",
+        data: labels,
+        axisLine: { lineStyle: { color: t.border } },
+        axisLabel: { color: t.text },
+      },
+      yAxis: [
+        {
+          type: "value",
+          name: "元",
+          nameTextStyle: { color: t.muted },
+          splitLine: { lineStyle: { color: t.split } },
+          axisLabel: { color: t.muted },
+        },
+        {
+          type: "value",
+          name: "单",
+          nameTextStyle: { color: t.muted },
+          splitLine: { show: false },
+          axisLabel: { color: t.muted },
+        },
+      ],
+      series: [
+        {
+          name: "成交额",
+          type: "line",
+          smooth: true,
+          showSymbol: labels.length <= 31,
+          areaStyle: { color: `${t.primary}14` },
+          data: gmv,
+        },
+        {
+          name: "成交单",
+          type: "bar",
+          yAxisIndex: 1,
+          barMaxWidth: 28,
+          itemStyle: { borderRadius: [4, 4, 0, 0] },
+          data: counts,
+        },
+      ],
     },
-    yAxis: [
-      {
-        type: "value",
-        name: "元",
-        splitLine: { lineStyle: { color: "#f3f4f6" } },
-        axisLabel: { color: "#9ca3af" },
-      },
-      {
-        type: "value",
-        name: "单",
-        splitLine: { show: false },
-        axisLabel: { color: "#9ca3af" },
-      },
-    ],
-    series: [
-      {
-        name: "成交额",
-        type: "line",
-        smooth: true,
-        showSymbol: labels.length <= 31,
-        areaStyle: { color: "rgba(37,99,235,0.08)" },
-        data: gmv,
-      },
-      {
-        name: "成交单",
-        type: "bar",
-        yAxisIndex: 1,
-        barMaxWidth: 28,
-        itemStyle: { borderRadius: [4, 4, 0, 0] },
-        data: counts,
-      },
-    ],
-  });
+    true
+  );
 
   const types = overview.value?.orderType || [];
-  typeChart?.setOption({
-    color: ["#2563eb", "#f59e0b", "#10b981"],
-    tooltip: { trigger: "item" },
-    legend: { bottom: 0 },
-    series: [
-      {
-        type: "pie",
-        radius: ["42%", "68%"],
-        center: ["50%", "46%"],
-        label: { formatter: "{b}\n{c}" },
-        data: types.map((t) => ({ name: t.name, value: t.value })),
-      },
-    ],
-  });
+  typeChart?.setOption(
+    {
+      color: [t.primary, "#f59e0b", "#10b981"],
+      backgroundColor: "transparent",
+      tooltip: { trigger: "item" },
+      legend: { bottom: 0, textStyle: { color: t.legend } },
+      series: [
+        {
+          type: "pie",
+          radius: ["42%", "68%"],
+          center: ["50%", "46%"],
+          label: { formatter: "{b}\n{c}", color: t.label },
+          data: types.map((item) => ({ name: item.name, value: item.value })),
+        },
+      ],
+    },
+    true
+  );
 
   const statuses = overview.value?.orderStatus || [];
-  statusChart?.setOption({
-    color: ["#2563eb"],
-    tooltip: { trigger: "axis" },
-    grid: { left: 64, right: 24, top: 16, bottom: 28 },
-    xAxis: {
-      type: "value",
-      splitLine: { lineStyle: { color: "#f3f4f6" } },
-      axisLabel: { color: "#9ca3af" },
-    },
-    yAxis: {
-      type: "category",
-      data: statuses.map((s) => s.name),
-      axisLabel: { color: "#6b7280" },
-    },
-    series: [
-      {
-        type: "bar",
-        barMaxWidth: 18,
-        itemStyle: { borderRadius: [0, 6, 6, 0], color: "#60a5fa" },
-        data: statuses.map((s) => s.value),
+  statusChart?.setOption(
+    {
+      color: [t.primary],
+      backgroundColor: "transparent",
+      tooltip: { trigger: "axis" },
+      grid: { left: 64, right: 24, top: 16, bottom: 28 },
+      xAxis: {
+        type: "value",
+        splitLine: { lineStyle: { color: t.split } },
+        axisLabel: { color: t.muted },
       },
-    ],
-  });
+      yAxis: {
+        type: "category",
+        data: statuses.map((s) => s.name),
+        axisLabel: { color: t.text },
+      },
+      series: [
+        {
+          type: "bar",
+          barMaxWidth: 18,
+          itemStyle: { borderRadius: [0, 6, 6, 0], color: t.primary },
+          data: statuses.map((s) => s.value),
+        },
+      ],
+    },
+    true
+  );
 }
 
 function onResize() {
@@ -293,6 +328,14 @@ function onResize() {
   typeChart?.resize();
   statusChart?.resize();
 }
+
+watch(
+  () => [themeStore.mode, themeStore.primaryColor] as const,
+  async () => {
+    await nextTick();
+    renderCharts();
+  }
+);
 
 onMounted(() => {
   load();
@@ -319,20 +362,52 @@ onBeforeUnmount(() => {
   margin-bottom: 20px;
   flex-wrap: wrap;
 }
+.range-pills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+.range-pills :deep(.el-radio-button) {
+  margin: 0;
+}
+.range-pills :deep(.el-radio-button__inner) {
+  margin: 0;
+  border-radius: 999px !important;
+  border: 1px solid var(--mall-border) !important;
+  box-shadow: none !important;
+  background: var(--mall-bg-card);
+  color: var(--mall-text-secondary);
+  padding: 8px 14px;
+  height: auto;
+  line-height: 1.2;
+}
+.range-pills :deep(.el-radio-button:first-child .el-radio-button__inner),
+.range-pills :deep(.el-radio-button:last-child .el-radio-button__inner) {
+  border-radius: 999px !important;
+}
+.range-pills :deep(.el-radio-button__original-radio:checked + .el-radio-button__inner) {
+  background: var(--mall-color-primary);
+  border-color: var(--mall-color-primary) !important;
+  color: #fff;
+  box-shadow: none !important;
+}
+.range-pills :deep(.el-radio-button__inner:hover) {
+  color: var(--mall-color-primary);
+}
 .title {
   margin: 0;
   font-size: 22px;
   font-weight: 700;
-  color: #111827;
+  color: var(--mall-text-primary);
 }
 .sub {
   margin: 6px 0 0;
-  color: #6b7280;
+  color: var(--mall-text-secondary);
   font-size: 13px;
 }
 .period {
   margin-left: 8px;
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
 }
 .kpi-grid {
   display: grid;
@@ -341,34 +416,34 @@ onBeforeUnmount(() => {
   margin-bottom: 14px;
 }
 .kpi-card {
-  background: #fff;
+  background: var(--mall-bg-card);
   border-radius: 14px;
   padding: 18px 16px;
   box-shadow: 0 1px 2px rgba(15, 23, 42, 0.04);
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--mall-border);
 }
 .kpi-card.accent {
-  background: #e6f4ff;
-  border-color: #bae0ff;
-  color: #2563eb;
+  background: var(--mall-color-primary-soft-bg);
+  border-color: var(--mall-color-primary-soft-border);
+  color: var(--mall-color-primary);
 }
 .kpi-card.accent .kpi-label,
 .kpi-card.accent .kpi-meta {
-  color: #2563eb;
+  color: var(--mall-color-primary);
 }
 .kpi-label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--mall-text-secondary);
 }
 .kpi-value {
   margin-top: 10px;
   font-size: 26px;
   font-weight: 700;
   letter-spacing: -0.02em;
-  color: #111827;
+  color: var(--mall-text-primary);
 }
 .kpi-card.accent .kpi-value {
-  color: #2563eb;
+  color: var(--mall-color-primary);
 }
 .kpi-meta {
   margin-top: 8px;
@@ -381,7 +456,7 @@ onBeforeUnmount(() => {
   color: #dc2626;
 }
 .kpi-meta.muted {
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
 }
 .kpi-card.accent .kpi-meta.up {
   color: #059669;
@@ -401,28 +476,29 @@ onBeforeUnmount(() => {
   align-items: flex-start;
   gap: 6px;
   padding: 16px 18px;
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--mall-border);
   border-radius: 14px;
-  background: #fff;
+  background: var(--mall-bg-card);
+  color: inherit;
   cursor: pointer;
   text-align: left;
   transition: border-color 0.15s, box-shadow 0.15s;
 }
 .todo:hover {
-  border-color: #bfdbfe;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.08);
+  border-color: var(--mall-color-primary-soft-border);
+  box-shadow: 0 4px 12px color-mix(in srgb, var(--mall-color-primary) 12%, transparent);
 }
 .todo-num {
   font-size: 24px;
   font-weight: 700;
-  color: #1d4ed8;
+  color: var(--mall-color-primary);
 }
 .todo-num.warn {
   color: #ea580c;
 }
 .todo-label {
   font-size: 13px;
-  color: #6b7280;
+  color: var(--mall-text-secondary);
 }
 .chart-grid {
   display: grid;
@@ -430,9 +506,9 @@ onBeforeUnmount(() => {
   gap: 14px;
 }
 .panel {
-  background: #fff;
+  background: var(--mall-bg-card);
   border-radius: 14px;
-  border: 1px solid #eef2f7;
+  border: 1px solid var(--mall-border);
   padding: 16px;
   min-height: 320px;
 }
@@ -446,12 +522,12 @@ onBeforeUnmount(() => {
   justify-content: space-between;
   margin-bottom: 8px;
   font-weight: 600;
-  color: #111827;
+  color: var(--mall-text-primary);
 }
 .hint {
   font-size: 12px;
   font-weight: 400;
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
 }
 .chart {
   width: 100%;

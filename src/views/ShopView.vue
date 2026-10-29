@@ -117,7 +117,8 @@
         </el-button>
         <el-button @click="loadWhitelist">刷新</el-button>
       </div>
-      <el-table :data="whitelistRows" v-loading="whitelistLoading" border stripe>
+      <div class="page-body">
+    <el-table :data="whitelistRows" v-loading="whitelistLoading" border stripe>
         <el-table-column prop="phone" label="手机号" width="140" />
         <el-table-column label="已注册用户" min-width="140">
           <template #default="{ row }">{{ row.memberNo || "-" }}</template>
@@ -150,6 +151,7 @@
           @size-change="searchWhitelist"
         />
       </div>
+    </div>
       <el-dialog v-model="whitelistVisible" title="添加维护白名单" width="440px" @closed="resetWhitelistForm">
         <el-form ref="whitelistFormRef" :model="whitelistForm" :rules="whitelistRules" label-width="96px">
           <el-form-item label="手机号" prop="phone">

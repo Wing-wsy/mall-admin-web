@@ -14,7 +14,8 @@
         <el-button @click="openIssue()">发券</el-button>
         <el-button @click="loadTemplates">刷新</el-button>
       </div>
-      <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
         <el-table-column prop="name" label="名称" min-width="140" />
         <el-table-column prop="issueTypeText" label="发放方式" width="110" />
         <el-table-column prop="benefitText" label="优惠" width="140" />
@@ -63,6 +64,7 @@
         />
       </div>
     </div>
+    </div>
 
     <div v-show="tab === 'log'">
       <div class="toolbar" data-sticky-chrome>
@@ -76,7 +78,8 @@
         </el-select>
         <el-button type="primary" @click="searchRecords">查询</el-button>
       </div>
-      <el-table :data="records" v-loading="logLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="records" v-loading="logLoading" border stripe :height="tableHeight">
         <el-table-column prop="couponNo" label="券编号" min-width="140" />
         <el-table-column prop="memberNo" label="用户ID" min-width="140">
           <template #default="{ row }">{{ row.memberNo || "-" }}</template>
@@ -103,6 +106,7 @@
           @size-change="searchRecords"
         />
       </div>
+    </div>
     </div>
 
     <el-dialog v-model="tplVisible" :title="form.id ? '编辑券模板' : '新增券模板'" width="560px">

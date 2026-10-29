@@ -4,6 +4,7 @@
       <el-button type="primary" @click="openCreate">新建商户</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="code" label="编码" width="120" />
@@ -33,6 +34,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑租户' : '新建商户'" width="480px">
       <el-form label-width="90px">

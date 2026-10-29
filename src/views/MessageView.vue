@@ -8,6 +8,7 @@
       <el-button type="primary" :disabled="!unreadCount" @click="onReadAll">全部已读</el-button>
     </div>
 
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe @row-click="onRowClick">
       <el-table-column label="状态" width="80">
         <template #default="{ row }">
@@ -33,6 +34,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
   </div>
 </template>

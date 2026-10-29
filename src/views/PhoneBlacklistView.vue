@@ -12,6 +12,7 @@
       <el-button @click="load">刷新</el-button>
     </div>
 
+    <div class="page-body">
     <el-table :data="rows" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="phone" label="手机号" width="140" />
       <el-table-column prop="reasonLabel" label="拉黑原因" min-width="160" />
@@ -46,6 +47,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="加入黑名单" width="440px" @closed="resetForm">

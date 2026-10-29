@@ -4,6 +4,7 @@
       <el-button type="primary" @click="openCreate">新增售卖单位</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="名称" min-width="140" />
@@ -43,6 +44,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑售卖单位' : '新增售卖单位'" width="480px">

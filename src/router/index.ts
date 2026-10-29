@@ -34,6 +34,12 @@ const router = createRouter({
           meta: { title: "工作台", permission: "dashboard" },
         },
         {
+          path: "profile",
+          name: "profile",
+          component: () => import("@/views/ProfileView.vue"),
+          meta: { title: "个人中心" },
+        },
+        {
           path: "messages",
           name: "messages",
           component: () => import("@/views/MessageView.vue"),

@@ -1,6 +1,17 @@
 :root {
-  color: #1f2329;
-  background: #f5f6f8;
+  --mall-color-primary: #42b983;
+  --mall-color-primary-dark: #389e6e;
+  --mall-color-primary-soft-bg: #ecf9f3;
+  --mall-color-primary-soft-border: #a8dfc6;
+  --mall-bg-page: #f5f6f8;
+  --mall-bg-aside: #ffffff;
+  --mall-bg-header: #ffffff;
+  --mall-bg-card: #ffffff;
+  --mall-text-primary: #1f2329;
+  --mall-text-secondary: #6b7280;
+  --mall-border: #e5e7eb;
+  color: var(--mall-text-primary);
+  background: var(--mall-bg-page);
   font-family: "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
 }
 
@@ -14,6 +25,8 @@ body,
   margin: 0;
   height: 100%;
   overflow: hidden;
+  background: var(--mall-bg-page);
+  color: var(--mall-text-primary);
 }
 
 /* 表格操作列：圆角图标按钮 */
@@ -51,27 +64,27 @@ body,
 }
 
 .op-btn--solid {
-  background: #0e7052;
-  border-color: #0e7052;
+  background: var(--mall-color-primary);
+  border-color: var(--mall-color-primary);
   color: #fff;
 }
 
 .op-btn--solid:hover:not(:disabled) {
-  background: #0b5c43;
-  border-color: #0b5c43;
+  background: var(--mall-color-primary-dark);
+  border-color: var(--mall-color-primary-dark);
   color: #fff;
 }
 
 .op-btn--soft {
-  background: #e8f5f0;
-  border-color: #b7d9cc;
-  color: #0e7052;
+  background: var(--mall-color-primary-soft-bg);
+  border-color: var(--mall-color-primary-soft-border);
+  color: var(--mall-color-primary);
 }
 
 .op-btn--soft:hover:not(:disabled) {
-  background: #d7eee5;
-  border-color: #96c7b6;
-  color: #0b5c43;
+  background: var(--el-color-primary-light-8, var(--mall-color-primary-soft-bg));
+  border-color: var(--mall-color-primary);
+  color: var(--mall-color-primary-dark);
 }
 
 .op-btn--danger {
@@ -96,4 +109,135 @@ body,
   background: #ffefd2;
   border-color: #e6c07a;
   color: #a8680c;
+}
+
+html.dark .op-btn--danger {
+  background: #3a2224;
+  border-color: #6b3a3e;
+  color: #f0a0a0;
+}
+
+html.dark .op-btn--danger:hover:not(:disabled) {
+  background: #4a2a2e;
+  border-color: #8a4a50;
+  color: #ffb4b4;
+}
+
+html.dark .op-btn--warn {
+  background: #3a2e1c;
+  border-color: #6b5530;
+  color: #e0b86a;
+}
+
+html.dark .op-btn--warn:hover:not(:disabled) {
+  background: #4a3a24;
+  border-color: #8a6e3e;
+  color: #f0c878;
+}
+
+html.dark .el-table {
+  --el-table-bg-color: var(--mall-bg-card);
+  --el-table-tr-bg-color: var(--mall-bg-card);
+  --el-table-header-bg-color: var(--el-fill-color-light);
+  --el-table-row-hover-bg-color: #1c2430;
+  --el-table-border-color: var(--mall-border);
+  --el-table-text-color: var(--mall-text-primary);
+  --el-table-header-text-color: var(--mall-text-secondary);
+}
+
+html.dark .el-table--striped .el-table__body tr.el-table__row--striped td.el-table__cell {
+  background: #12161d;
+}
+
+html.dark .el-input__wrapper,
+html.dark .el-select__wrapper,
+html.dark .el-cascader .el-input__wrapper {
+  background-color: var(--el-fill-color-blank);
+}
+
+/* 列表页：搜索栏 / 表格区分开的圆角卡片 */
+.toolbar {
+  flex-shrink: 0;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin: 0 !important;
+  padding: 14px 16px;
+  background: var(--mall-bg-card);
+  border: 1px solid var(--mall-border);
+  border-radius: 12px;
+}
+
+/* 含搜索栏 + 表格卡的分区（含 Tab 内子面板） */
+div:has(> .toolbar):has(> .page-body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
+}
+
+.page-body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px 12px 0;
+  background: var(--mall-bg-card);
+  border: 1px solid var(--mall-border);
+  border-radius: 12px;
+}
+
+.page-body .pager,
+.pager {
+  flex-shrink: 0;
+  margin: 0 !important;
+  padding: 12px 4px;
+  display: flex;
+  justify-content: flex-end;
+}
+
+/* 全局下拉 / 弹出菜单圆角 */
+.el-dropdown__popper.el-popper,
+.el-select__popper.el-popper,
+.el-popper.is-light,
+.el-popover.el-popper {
+  border-radius: 10px !important;
+}
+
+.el-dropdown-menu {
+  padding: 6px !important;
+  border-radius: 10px !important;
+  border: none !important;
+}
+
+.el-dropdown-menu__item {
+  border-radius: 8px;
+  margin: 0;
+  padding: 8px 12px;
+}
+
+.el-dropdown-menu__item:not(.is-disabled):hover,
+.el-dropdown-menu__item:not(.is-disabled):focus {
+  background: var(--mall-color-primary-soft-bg) !important;
+  color: var(--mall-color-primary) !important;
+}
+
+.el-select-dropdown {
+  border-radius: 10px !important;
+}
+
+.el-select-dropdown__list {
+  padding: 6px !important;
+}
+
+.el-select-dropdown__item {
+  border-radius: 8px;
+}
+
+.el-popper.is-light .el-popper__arrow::before {
+  border-radius: 2px;
 }

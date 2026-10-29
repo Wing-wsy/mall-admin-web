@@ -19,6 +19,7 @@
       <el-button v-if="!userStore.isSupplier" type="primary" @click="openCreate">新建</el-button>
       <el-button v-if="!userStore.isSupplier" @click="openSetting">设置</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="name" label="供应商" min-width="140" />
       <el-table-column prop="phone" label="会员手机" width="130" />
@@ -61,6 +62,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="formVisible" :title="form.id ? '修改供应商' : '新建供应商'" width="520px">

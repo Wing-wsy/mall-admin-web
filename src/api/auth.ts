@@ -32,6 +32,18 @@ export function fetchAdminMe() {
   return request.get<ApiResult<AdminLoginResult>>("/api/admin/auth/me");
 }
 
-export function updateAdminProfile(payload: { avatarUrl?: string }) {
+export function updateAdminProfile(payload: { nickname?: string; avatarUrl?: string }) {
   return request.put<ApiResult<AdminLoginResult>>("/api/admin/auth/profile", payload);
+}
+
+export function changeAdminPassword(payload: { oldPassword: string; newPassword: string }) {
+  return request.post<ApiResult<null>>("/api/admin/auth/change-password", payload);
+}
+
+export function verifyAdminPassword(password: string) {
+  return request.post<ApiResult<null>>(
+    "/api/admin/auth/verify-password",
+    { password },
+    { skipErrorMessage: true }
+  );
 }

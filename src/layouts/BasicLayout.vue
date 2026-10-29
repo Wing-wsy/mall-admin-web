@@ -6,9 +6,6 @@
         <el-menu
           :default-active="active"
           router
-          background-color="#ffffff"
-          text-color="rgba(0, 0, 0, 0.65)"
-          active-text-color="#2563eb"
         >
           <el-menu-item v-if="dashboardItem?.path" :index="dashboardItem.path">
             <MenuIcon :name="menuIcon(dashboardItem.code)" />
@@ -41,7 +38,7 @@
     </el-aside>
     <el-container class="main-wrap">
       <el-header class="header">
-        <div class="tabs" role="tablist">
+        <div class="tabs" role="tablist" @click="hideTabMenu">
           <button
             v-for="tab in tabStore.tabs"
             :key="tab.path"
@@ -49,6 +46,7 @@
             :class="{ active: tab.path === active }"
             type="button"
             @click="openTab(tab.path)"
+            @contextmenu.prevent="openTabMenu($event, tab.path)"
           >
             <span class="tab-title">{{ tab.title }}</span>
             <span
@@ -57,7 +55,59 @@
               @click.stop="closeTab(tab.path)"
             >×</span>
           </button>
+          <button
+            v-if="tabStore.tabs.length > 1"
+            type="button"
+            class="tab-more"
+            title="标签操作"
+            @click.stop="openTabMenu($event, active)"
+          >
+            <el-icon :size="14"><ArrowDown /></el-icon>
+          </button>
         </div>
+        <Teleport to="body">
+          <div
+            v-if="tabMenu.visible"
+            class="tab-menu-mask"
+            @click="hideTabMenu"
+            @contextmenu.prevent="hideTabMenu"
+          >
+            <ul
+              class="tab-menu"
+              :style="{ left: `${tabMenu.x}px`, top: `${tabMenu.y}px` }"
+              @click.stop
+            >
+              <li
+                class="tab-menu-item"
+                :class="{ disabled: tabStore.tabs.length <= 1 }"
+                @click="onTabMenu('close')"
+              >
+                关闭
+              </li>
+              <li
+                class="tab-menu-item"
+                :class="{ disabled: tabStore.tabs.length <= 1 }"
+                @click="onTabMenu('others')"
+              >
+                关闭其他
+              </li>
+              <li
+                class="tab-menu-item"
+                :class="{ disabled: !canCloseLeft }"
+                @click="onTabMenu('left')"
+              >
+                关闭左侧
+              </li>
+              <li
+                class="tab-menu-item"
+                :class="{ disabled: !canCloseRight }"
+                @click="onTabMenu('right')"
+              >
+                关闭右侧
+              </li>
+            </ul>
+          </div>
+        </Teleport>
         <div class="header-right">
           <el-popover
             v-model:visible="inboxVisible"
@@ -100,40 +150,64 @@
             </div>
           </el-popover>
           <span class="user">{{ userStore.tenantName }} · {{ userStore.nickname || userStore.username }}</span>
-          <el-upload
-            class="avatar-upload"
-            :show-file-list="false"
-            :http-request="onAvatarUpload"
-            accept="image/*"
-            title="点击更换头像"
+          <el-dropdown
+            trigger="hover"
+            placement="bottom-end"
+            :show-timeout="120"
+            :hide-timeout="200"
+            @command="onUserCommand"
           >
-            <el-avatar :size="28" :src="userStore.avatarUrl || undefined">
+            <el-avatar
+              class="avatar-trigger"
+              :size="28"
+              :src="userStore.avatarUrl || undefined"
+            >
               {{ avatarLetter }}
             </el-avatar>
-          </el-upload>
-          <el-button link type="primary" @click="onLogout">退出</el-button>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="profile">
+                  <el-icon><User /></el-icon>
+                  个人中心
+                </el-dropdown-item>
+                <el-dropdown-item command="layout">
+                  <el-icon><Setting /></el-icon>
+                  布局设置
+                </el-dropdown-item>
+                <el-dropdown-item command="lock">
+                  <el-icon><Lock /></el-icon>
+                  锁定屏幕
+                </el-dropdown-item>
+                <el-dropdown-item divided command="logout">
+                  <el-icon><SwitchButton /></el-icon>
+                  退出登录
+                </el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
       <el-main class="main">
-        <router-view v-slot="{ Component }">
-          <keep-alive>
-            <component :is="Component" :key="active" />
-          </keep-alive>
-        </router-view>
+        <div class="main-panel">
+          <router-view v-slot="{ Component }">
+            <keep-alive>
+              <component :is="Component" :key="active" />
+            </keep-alive>
+          </router-view>
+        </div>
       </el-main>
     </el-container>
     <AiAssistantFloat />
+    <LayoutSettingsDrawer v-model="layoutDrawerVisible" />
   </el-container>
 </template>
 
 <script setup lang="ts">
-import { computed, onMounted, onUnmounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, reactive, ref, watch } from "vue";
 import { useRoute, useRouter } from "vue-router";
-import { Bell } from "@element-plus/icons-vue";
-import { ElMessage, ElNotification } from "element-plus";
-import type { UploadRequestOptions } from "element-plus";
-import { fetchAdminMe, logoutAdmin, updateAdminProfile } from "@/api/auth";
-import { uploadAdminFile } from "@/api/product";
+import { ArrowDown, Bell, Lock, Setting, SwitchButton, User } from "@element-plus/icons-vue";
+import { ElMessageBox, ElNotification } from "element-plus";
+import { fetchAdminMe, logoutAdmin } from "@/api/auth";
 import {
   fetchInboxList,
   fetchInboxUnreadCount,
@@ -142,8 +216,10 @@ import {
   type AdminMessage,
 } from "@/api/inbox";
 import AiAssistantFloat from "@/components/ai/AiAssistantFloat.vue";
+import LayoutSettingsDrawer from "@/components/LayoutSettingsDrawer.vue";
 import MenuIcon from "@/components/MenuIcon.vue";
 import { buildSidebarMenus, menuIcon } from "@/config/menuGroups";
+import { useLockStore } from "@/stores/lock";
 import { useTabStore } from "@/stores/tabs";
 import { useUserStore, type MenuNode } from "@/stores/user";
 
@@ -151,10 +227,27 @@ const route = useRoute();
 const router = useRouter();
 const userStore = useUserStore();
 const tabStore = useTabStore();
+const lockStore = useLockStore();
 
 const avatarLetter = computed(() =>
   (userStore.nickname || userStore.username || "?").slice(0, 1)
 );
+const layoutDrawerVisible = ref(false);
+const tabMenu = reactive({
+  visible: false,
+  x: 0,
+  y: 0,
+  path: "",
+});
+
+const canCloseLeft = computed(() => {
+  const index = tabStore.tabs.findIndex((t) => t.path === tabMenu.path);
+  return index > 0;
+});
+const canCloseRight = computed(() => {
+  const index = tabStore.tabs.findIndex((t) => t.path === tabMenu.path);
+  return index >= 0 && index < tabStore.tabs.length - 1;
+});
 
 const sidebarMenus = computed(() => {
   const menus = userStore.isSupplier
@@ -304,31 +397,90 @@ function closeTab(path: string) {
   if (path === route.path && next) router.push(next.path);
 }
 
+function hideTabMenu() {
+  tabMenu.visible = false;
+}
+
+function openTabMenu(event: MouseEvent, path: string) {
+  if (!path) return;
+  tabMenu.path = path;
+  tabMenu.x = Math.min(event.clientX, window.innerWidth - 140);
+  tabMenu.y = Math.min(event.clientY, window.innerHeight - 160);
+  tabMenu.visible = true;
+}
+
+function onTabMenu(action: "close" | "others" | "left" | "right") {
+  const path = tabMenu.path;
+  const index = tabStore.tabs.findIndex((t) => t.path === path);
+  const activeIndex = tabStore.tabs.findIndex((t) => t.path === route.path);
+  hideTabMenu();
+  if (!path || index < 0) return;
+
+  if (action === "close") {
+    if (tabStore.tabs.length <= 1) return;
+    closeTab(path);
+    return;
+  }
+  if (action === "others") {
+    if (tabStore.tabs.length <= 1) return;
+    tabStore.closeOthers(path);
+    if (route.path !== path) router.push(path);
+    return;
+  }
+  if (action === "left") {
+    if (index <= 0) return;
+    const next = tabStore.closeLeft(path);
+    if (activeIndex >= 0 && activeIndex < index && next) {
+      router.push(next.path);
+    }
+    return;
+  }
+  if (action === "right") {
+    if (index >= tabStore.tabs.length - 1) return;
+    tabStore.closeRight(path);
+    if (activeIndex > index) {
+      router.push(path);
+    }
+  }
+}
+
+function onUserCommand(command: string) {
+  if (command === "profile") {
+    router.push("/profile");
+    return;
+  }
+  if (command === "layout") {
+    layoutDrawerVisible.value = true;
+    return;
+  }
+  if (command === "lock") {
+    lockStore.lock();
+    return;
+  }
+  if (command === "logout") {
+    onLogout();
+  }
+}
+
 async function onLogout() {
+  try {
+    await ElMessageBox.confirm("确认退出当前账号？", "退出登录", {
+      type: "warning",
+      confirmButtonText: "退出",
+      cancelButtonText: "取消",
+    });
+  } catch {
+    return;
+  }
   try {
     await logoutAdmin();
   } catch {
     // ignore
   }
+  lockStore.unlock();
   tabStore.clear();
   userStore.logout();
   router.push("/login");
-}
-
-async function onAvatarUpload(options: UploadRequestOptions) {
-  try {
-    const { data: upload } = await uploadAdminFile(options.file as File, "avatar");
-    const url = upload?.data?.url;
-    if (!url) {
-      ElMessage.error("上传失败");
-      return;
-    }
-    const { data } = await updateAdminProfile({ avatarUrl: url });
-    if (data?.data) userStore.login(data.data);
-    ElMessage.success("头像已更新");
-  } catch {
-    // request interceptor already toasts
-  }
 }
 </script>
 
@@ -336,15 +488,16 @@ async function onAvatarUpload(options: UploadRequestOptions) {
 .layout {
   height: 100vh;
   overflow: hidden;
+  background: var(--mall-bg-page);
 }
 .aside {
   height: 100%;
   overflow: hidden;
   display: flex;
   flex-direction: column;
-  background: #fff;
-  color: #111827;
-  border-right: 1px solid #e5e7eb;
+  background: var(--mall-bg-aside);
+  color: var(--mall-text-primary);
+  border-right: 1px solid var(--mall-border);
 }
 .brand {
   flex-shrink: 0;
@@ -353,6 +506,7 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   align-items: center;
   padding: 0 20px;
   font-weight: 700;
+  color: var(--mall-text-primary);
 }
 .aside-menu {
   flex: 1;
@@ -369,44 +523,57 @@ async function onAvatarUpload(options: UploadRequestOptions) {
 .aside :deep(.el-menu) {
   border-right: none;
   background: transparent;
+  padding: 0 10px 12px;
   --el-menu-bg-color: transparent;
-  --el-menu-text-color: rgba(0, 0, 0, 0.65);
-  --el-menu-hover-text-color: rgba(0, 0, 0, 0.88);
-  --el-menu-hover-bg-color: #f5f5f5;
-  --el-menu-active-color: #2563eb;
+  --el-menu-text-color: var(--mall-text-secondary);
+  --el-menu-hover-text-color: var(--mall-color-primary);
+  --el-menu-hover-bg-color: var(--mall-color-primary-soft-bg);
+  --el-menu-active-color: var(--mall-color-primary);
 }
 .aside :deep(.el-menu-item),
 .aside :deep(.el-sub-menu__title) {
-  color: rgba(0, 0, 0, 0.65) !important;
+  height: 42px;
+  line-height: 42px;
+  margin: 4px 0;
+  border-radius: 10px;
+  color: var(--mall-text-secondary) !important;
   font-weight: 400;
 }
 .aside :deep(.el-menu-item:hover),
 .aside :deep(.el-sub-menu__title:hover) {
-  background: #f5f5f5 !important;
-  color: rgba(0, 0, 0, 0.88) !important;
+  background: var(--mall-color-primary-soft-bg) !important;
+  color: var(--mall-color-primary) !important;
 }
-.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title) {
-  color: #2563eb !important;
-  background: transparent !important;
+.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title),
+.aside :deep(.el-sub-menu.is-opened > .el-sub-menu__title) {
+  color: var(--mall-color-primary) !important;
+  background: var(--mall-color-primary-soft-bg) !important;
 }
 .aside :deep(.el-menu-item.is-active) {
-  background: #e6f4ff !important;
-  color: #2563eb !important;
-  box-shadow: inset -3px 0 0 #2563eb;
+  background: var(--mall-color-primary-soft-bg) !important;
+  color: var(--mall-color-primary) !important;
+  box-shadow: none;
 }
 .aside :deep(.el-menu-item.is-active:hover) {
-  background: #e6f4ff !important;
-  color: #2563eb !important;
+  background: var(--mall-color-primary-soft-bg) !important;
+  color: var(--mall-color-primary) !important;
+}
+.aside :deep(.el-sub-menu .el-menu) {
+  padding: 0;
+  background: transparent !important;
 }
 .aside :deep(.el-sub-menu .el-menu-item) {
-  padding-left: 40px !important;
+  padding-left: 48px !important;
   font-weight: 400;
+  min-width: 0;
 }
 .aside :deep(.el-sub-menu__icon-arrow) {
-  color: rgba(0, 0, 0, 0.45);
+  color: var(--mall-text-secondary);
+  right: 14px;
 }
-.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title .el-sub-menu__icon-arrow) {
-  color: #2563eb;
+.aside :deep(.el-sub-menu.is-active > .el-sub-menu__title .el-sub-menu__icon-arrow),
+.aside :deep(.el-sub-menu.is-opened > .el-sub-menu__title .el-sub-menu__icon-arrow) {
+  color: var(--mall-color-primary);
 }
 .main-wrap {
   height: 100%;
@@ -418,8 +585,8 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   display: flex;
   align-items: center;
   gap: 16px;
-  background: #fff;
-  border-bottom: 1px solid #e5e7eb;
+  background: var(--mall-bg-header);
+  border-bottom: 1px solid var(--mall-border);
 }
 .tabs {
   flex: 1;
@@ -440,17 +607,17 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   gap: 6px;
   height: 28px;
   padding: 0 10px;
-  border: 1px solid #e5e7eb;
-  border-radius: 4px;
-  background: #f9fafb;
-  color: #4b5563;
+  border: 1px solid var(--mall-border);
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+  color: var(--mall-text-secondary);
   font-size: 13px;
   cursor: pointer;
 }
 .tab.active {
-  background: #eff6ff;
-  border-color: #93c5fd;
-  color: #2563eb;
+  background: var(--mall-color-primary-soft-bg);
+  border-color: var(--mall-color-primary-soft-border);
+  color: var(--mall-color-primary);
 }
 .tab-title {
   max-width: 120px;
@@ -461,13 +628,85 @@ async function onAvatarUpload(options: UploadRequestOptions) {
 .tab-close {
   width: 14px;
   line-height: 1;
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
 }
 .tab-close:hover {
-  color: #111827;
+  color: var(--mall-text-primary);
+}
+.tab-more {
+  flex-shrink: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  margin-left: 2px;
+  border: 1px solid var(--mall-border);
+  border-radius: 8px;
+  background: var(--el-fill-color-light);
+  color: var(--mall-text-secondary);
+  cursor: pointer;
+}
+.tab-more:hover {
+  background: var(--mall-color-primary-soft-bg);
+  border-color: var(--mall-color-primary-soft-border);
+  color: var(--mall-color-primary);
+}
+.tab-menu-mask {
+  position: fixed;
+  inset: 0;
+  z-index: 4000;
+}
+.tab-menu {
+  position: fixed;
+  min-width: 120px;
+  margin: 0;
+  padding: 6px;
+  list-style: none;
+  background: var(--mall-bg-card);
+  border: 1px solid var(--mall-border);
+  border-radius: 10px;
+  box-shadow: 0 8px 24px rgba(15, 23, 42, 0.12);
+}
+.tab-menu-item {
+  padding: 8px 14px;
+  border-radius: 8px;
+  font-size: 13px;
+  color: var(--mall-text-primary);
+  cursor: pointer;
+  white-space: nowrap;
+}
+.tab-menu-item:hover:not(.disabled) {
+  background: var(--mall-color-primary-soft-bg);
+  color: var(--mall-color-primary);
+}
+.tab-menu-item.disabled {
+  color: var(--mall-text-secondary);
+  opacity: 0.45;
+  cursor: not-allowed;
 }
 .main {
-  overflow-y: auto;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 12px;
+  background: var(--mall-bg-page);
+}
+.main-panel {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  display: flex;
+  flex-direction: column;
+}
+.main-panel > *:has(.toolbar),
+.main-panel > *:has(.page-body) {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  overflow: hidden;
 }
 .header-right {
   display: flex;
@@ -475,16 +714,13 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   gap: 12px;
 }
 .user {
-  color: #6b7280;
+  color: var(--mall-text-secondary);
   font-size: 14px;
 }
-.avatar-upload {
-  display: inline-flex;
+.avatar-trigger {
   cursor: pointer;
-  line-height: 0;
-}
-.avatar-upload :deep(.el-upload) {
-  display: inline-flex;
+  flex-shrink: 0;
+  outline: none;
 }
 .inbox-trigger {
   display: inline-flex;
@@ -493,12 +729,14 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   min-width: 28px;
   min-height: 28px;
   padding: 4px;
-  color: #4b5563;
+  border: none;
+  background: transparent;
+  color: var(--mall-text-secondary);
   cursor: pointer;
   outline: none;
 }
 .inbox-trigger:hover {
-  color: #111827;
+  color: var(--mall-text-primary);
 }
 .inbox-panel {
   margin: -4px;
@@ -517,7 +755,7 @@ async function onAvatarUpload(options: UploadRequestOptions) {
 .inbox-empty {
   padding: 24px 8px;
   text-align: center;
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
   font-size: 13px;
 }
 .inbox-item {
@@ -525,26 +763,27 @@ async function onAvatarUpload(options: UploadRequestOptions) {
   width: 100%;
   text-align: left;
   border: 0;
-  border-top: 1px solid #f3f4f6;
-  background: #fff;
+  border-top: 1px solid var(--mall-border);
+  background: var(--mall-bg-card);
   padding: 10px 8px;
   cursor: pointer;
+  color: inherit;
 }
 .inbox-item:hover {
-  background: #f9fafb;
+  background: var(--el-fill-color-light);
 }
 .inbox-item.unread {
-  background: #eff6ff;
+  background: var(--mall-color-primary-soft-bg);
 }
 .inbox-title {
   font-size: 13px;
   font-weight: 600;
-  color: #111827;
+  color: var(--mall-text-primary);
 }
 .inbox-content {
   margin-top: 4px;
   font-size: 12px;
-  color: #6b7280;
+  color: var(--mall-text-secondary);
   overflow: hidden;
   white-space: nowrap;
   text-overflow: ellipsis;
@@ -552,6 +791,6 @@ async function onAvatarUpload(options: UploadRequestOptions) {
 .inbox-time {
   margin-top: 4px;
   font-size: 12px;
-  color: #9ca3af;
+  color: var(--mall-text-secondary);
 }
 </style>

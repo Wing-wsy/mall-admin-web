@@ -17,6 +17,7 @@
       />
       <el-button type="primary" @click="search">查询</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="orderNo" label="订单号" min-width="170">
         <template #default="{ row }">
@@ -65,6 +66,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="orderVisible" title="订单详情" width="720px">

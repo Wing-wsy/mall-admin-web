@@ -4,6 +4,7 @@
       <el-button type="primary" @click="openCreate">新增销售属性</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="80" />
       <el-table-column prop="name" label="属性名" min-width="120" />
@@ -49,6 +50,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑销售属性' : '新增销售属性'" width="560px">

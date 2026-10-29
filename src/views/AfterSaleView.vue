@@ -33,6 +33,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button v-if="userStore.hasPermission('aftersale:audit')" @click="openReasons">主动退款原因</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="afterSaleNo" label="售后单号" min-width="180" />
       <el-table-column prop="orderNo" label="订单号" min-width="170" />
@@ -81,6 +82,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="售后详情" width="720px">

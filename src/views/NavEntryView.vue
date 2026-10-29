@@ -5,6 +5,7 @@
       <el-button @click="load">刷新</el-button>
       <span class="hint">小程序首页按 2 行 5 列分页展示；图标走「图标套装」槽位，换套不必改这里。覆盖图仅在该格子要单独换图时上传</span>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="图标" width="90">
@@ -55,6 +56,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑导航' : '新增导航'" width="560px">

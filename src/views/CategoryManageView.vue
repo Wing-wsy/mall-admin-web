@@ -7,6 +7,7 @@
       <span v-if="isFestival" class="hint">节日起止时间配在一级；过期后小程序自动隐藏，商品关联保留</span>
     </div>
 
+    <div class="page-body">
     <el-table :data="tree"
       v-loading="loading"
       border
@@ -63,6 +64,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="dialogTitle" width="520px">
       <el-form label-width="96px">

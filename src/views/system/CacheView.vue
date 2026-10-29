@@ -37,6 +37,7 @@
       </el-button>
     </div>
 
+    <div class="page-body">
     <el-alert
       v-if="truncated"
       type="info"
@@ -109,6 +110,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="detailVisible" title="缓存详情" width="720px">

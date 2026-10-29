@@ -45,6 +45,7 @@
       <el-button @click="resetQuery">重置</el-button>
     </div>
 
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="createTime" label="时间" width="170" />
       <el-table-column label="操作人" width="150">
@@ -86,6 +87,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="操作详情" width="720px">

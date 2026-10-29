@@ -5,6 +5,7 @@
       <el-button @click="load">刷新</el-button>
       <span class="hint">首页按排序展示启用且上架的商品；下架商品不会出现在小程序</span>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="90">
@@ -56,6 +57,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑热卖' : '新增热卖'" width="520px">

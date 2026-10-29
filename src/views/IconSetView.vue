@@ -6,6 +6,7 @@
       <el-button v-if="hasActive" @click="onClearActive">取消店铺强制套</el-button>
       <span class="hint">启用某套后，首页金刚区和底栏 Tab 一起换成该套画风；取消后跟随节日皮肤绑定的套装</span>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="80">
@@ -42,6 +43,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑套装' : '新建套装'" width="880px" top="4vh">
       <el-form label-width="88px">

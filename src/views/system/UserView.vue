@@ -6,14 +6,14 @@
       <el-input
         v-model="query.username"
         clearable
-        placeholder="用户名（模糊）"
+        placeholder="用户名"
         style="width: 160px"
         @keyup.enter="search"
       />
       <el-input
         v-model="query.nickname"
         clearable
-        placeholder="昵称（模糊）"
+        placeholder="昵称"
         style="width: 160px"
         @keyup.enter="search"
       />
@@ -27,6 +27,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="username" label="用户名" width="140" />
@@ -67,6 +68,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑账号' : '新建账号'" width="520px">

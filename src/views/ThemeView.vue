@@ -5,6 +5,7 @@
       <el-button @click="load">刷新</el-button>
       <span class="hint">有效期继承绑定的节日一级分类；多皮肤重叠按优先级取最高</span>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="code" label="编码" width="120" />
@@ -48,6 +49,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑皮肤' : '新建皮肤'" width="720px" top="5vh">
       <el-form label-width="110px">

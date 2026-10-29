@@ -4,6 +4,7 @@
       <el-button type="primary" @click="openCreate">新增轮播</el-button>
       <el-button @click="load">刷新</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="图片" width="120">
@@ -36,6 +37,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑轮播' : '新增轮播'" width="560px">
       <el-form label-width="96px">

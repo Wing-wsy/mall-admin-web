@@ -14,7 +14,7 @@
       <el-input
         v-model="query.name"
         clearable
-        placeholder="商品名称（模糊）"
+        placeholder="商品名称"
         style="width: 180px"
         @keyup.enter="search"
       />
@@ -67,6 +67,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
+    <div class="page-body">
     <el-table
       :data="list"
       v-loading="loading"
@@ -202,6 +203,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑商品' : '新增商品'" width="1080px" top="3vh">

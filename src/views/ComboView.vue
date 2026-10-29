@@ -12,6 +12,7 @@
       <span class="hint">仅自营商品可组套；下单按礼盒发货，库存扣子商品</span>
     </div>
 
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column label="封面" width="90">
@@ -56,6 +57,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑套装' : '新建套装'" width="760px" top="4vh" destroy-on-close>

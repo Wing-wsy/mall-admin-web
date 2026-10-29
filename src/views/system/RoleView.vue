@@ -6,14 +6,14 @@
       <el-input
         v-model="query.code"
         clearable
-        placeholder="编码（模糊）"
+        placeholder="编码"
         style="width: 160px"
         @keyup.enter="search"
       />
       <el-input
         v-model="query.name"
         clearable
-        placeholder="名称（模糊）"
+        placeholder="名称"
         style="width: 160px"
         @keyup.enter="search"
       />
@@ -24,6 +24,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="resetQuery">重置</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="id" label="ID" width="70" />
       <el-table-column prop="code" label="编码" width="140" />
@@ -55,6 +56,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑角色' : '新建角色'" width="560px">

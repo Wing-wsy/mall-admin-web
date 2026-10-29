@@ -7,6 +7,7 @@
       <el-button type="primary" @click="search">查询</el-button>
       <el-button @click="reset">重置</el-button>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column prop="memberNo" label="用户ID" min-width="140">
         <template #default="{ row }">{{ row.memberNo || "-" }}</template>
@@ -70,6 +71,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="用户详情" width="720px">

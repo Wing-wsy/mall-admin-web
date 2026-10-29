@@ -14,7 +14,8 @@
         <el-button @click="loadTemplates">刷新</el-button>
         <span class="hint">验证码生成后仅导出一次明文，用于印刷刮涂层。购卡走普通商品订单，不绑码。</span>
       </div>
-      <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="templates" v-loading="tplLoading" border stripe :height="tableHeight">
         <el-table-column prop="name" label="券种" min-width="140" />
         <el-table-column label="兑换礼盒" min-width="180">
           <template #default="{ row }">
@@ -69,6 +70,7 @@
         />
       </div>
     </div>
+    </div>
 
     <div v-show="tab === 'code'">
       <div class="toolbar" data-sticky-chrome>
@@ -86,7 +88,8 @@
         <el-button type="primary" @click="searchCodes">查询</el-button>
         <el-button @click="openVoidBatch">按批次作废</el-button>
       </div>
-      <el-table :data="codes" v-loading="codeLoading" border stripe :height="tableHeight">
+      <div class="page-body">
+    <el-table :data="codes" v-loading="codeLoading" border stripe :height="tableHeight">
         <el-table-column prop="codeMask" label="验证码" width="120" />
         <el-table-column prop="templateName" label="券种" min-width="120" />
         <el-table-column prop="batchNo" label="批次" min-width="160" />
@@ -122,6 +125,7 @@
           @size-change="searchCodes"
         />
       </div>
+    </div>
     </div>
 
     <el-dialog v-model="tplVisible" :title="form.id ? '编辑券种' : '新增券种'" width="560px">

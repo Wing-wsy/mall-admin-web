@@ -12,6 +12,7 @@
       <el-button type="primary" @click="search">查询</el-button>
     </div>
 
+    <div class="page-body">
     <el-descriptions v-if="account" :column="4" border class="summary">
       <el-descriptions-item label="用户ID">{{ account.memberNo || "-" }}</el-descriptions-item>
       <el-descriptions-item label="昵称">{{ account.nickname || "-" }}</el-descriptions-item>
@@ -60,6 +61,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" title="订单详情" width="720px">

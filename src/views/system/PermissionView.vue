@@ -12,6 +12,7 @@
       />
     </div>
 
+    <div class="page-body">
     <el-table :data="tree"
       v-loading="loading"
       border
@@ -51,6 +52,7 @@
         </template>
       </el-table-column>
     </el-table>
+    </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑权限' : '新建权限'" width="520px">
       <el-form label-width="90px">

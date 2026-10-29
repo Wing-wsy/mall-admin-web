@@ -5,6 +5,7 @@
       <el-button @click="load">刷新</el-button>
       <span class="hint">积分兑换只能按库存单位兑换，配置的积分为兑换 1 个库存单位所需分数</span>
     </div>
+    <div class="page-body">
     <el-table :data="list" v-loading="loading" border stripe :height="tableHeight">
       <el-table-column label="商品" min-width="180">
         <template #default="{ row }">
@@ -66,6 +67,7 @@
         @current-change="load"
         @size-change="search"
       />
+    </div>
     </div>
 
     <el-dialog v-model="visible" :title="form.id ? '编辑兑换商品' : '新增兑换商品'" width="520px">
