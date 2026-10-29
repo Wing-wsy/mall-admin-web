@@ -208,6 +208,12 @@ const router = createRouter({
           meta: { title: "角色管理", permission: "system:role" },
         },
         {
+          path: "system/permissions",
+          name: "system-permissions",
+          component: () => import("@/views/system/PermissionView.vue"),
+          meta: { title: "权限管理", permission: "system:permission" },
+        },
+        {
           path: "system/oper-logs",
           name: "system-oper-logs",
           component: () => import("@/views/system/OperLogView.vue"),
@@ -244,9 +250,12 @@ router.beforeEach((to) => {
   if (to.path === "/login") {
     return true;
   }
+  const store = useUserStore();
+  if (store.isSupplier && (to.name === "ai-assistant" || to.path === "/ai-assistant")) {
+    return store.flatMenus[0]?.path || "/dashboard";
+  }
   const perm = to.meta.permission as string | undefined;
   if (perm) {
-    const store = useUserStore();
     if (!store.hasPermission(perm)) {
       return store.flatMenus[0]?.path || "/login";
     }

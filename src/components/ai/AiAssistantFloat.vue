@@ -59,7 +59,10 @@ const route = useRoute();
 const router = useRouter();
 
 const visible = computed(
-  () => userStore.hasPermission("ai:assistant") && route.path !== "/login"
+  () =>
+    !userStore.isSupplier &&
+    userStore.hasPermission("ai:assistant") &&
+    route.path !== "/login"
 );
 
 const left = ref(0);

@@ -145,7 +145,7 @@ import AiAssistantFloat from "@/components/ai/AiAssistantFloat.vue";
 import MenuIcon from "@/components/MenuIcon.vue";
 import { buildSidebarMenus, menuIcon } from "@/config/menuGroups";
 import { useTabStore } from "@/stores/tabs";
-import { useUserStore } from "@/stores/user";
+import { useUserStore, type MenuNode } from "@/stores/user";
 
 const route = useRoute();
 const router = useRouter();
@@ -156,7 +156,21 @@ const avatarLetter = computed(() =>
   (userStore.nickname || userStore.username || "?").slice(0, 1)
 );
 
-const sidebarMenus = computed(() => buildSidebarMenus(userStore.menus));
+const sidebarMenus = computed(() => {
+  const menus = userStore.isSupplier
+    ? filterMenusWithoutAi(userStore.menus)
+    : userStore.menus;
+  return buildSidebarMenus(menus);
+});
+
+function filterMenusWithoutAi(nodes: MenuNode[] | undefined): MenuNode[] {
+  return (nodes || [])
+    .filter((n) => n.code !== "ai:assistant")
+    .map((n) => ({
+      ...n,
+      children: n.children?.length ? filterMenusWithoutAi(n.children) : n.children,
+    }));
+}
 const dashboardItem = computed(() => sidebarMenus.value.find((n) => n.code === "dashboard"));
 const groupMenus = computed(() => sidebarMenus.value.filter((n) => n.children?.length));
 const extraItems = computed(() =>
