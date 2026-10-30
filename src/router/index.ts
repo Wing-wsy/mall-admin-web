@@ -34,6 +34,12 @@ const router = createRouter({
           meta: { title: "工作台", permission: "dashboard" },
         },
         {
+          path: "track",
+          name: "track",
+          component: () => import("@/views/TrackReportView.vue"),
+          meta: { title: "转化分析", permission: "track" },
+        },
+        {
           path: "profile",
           name: "profile",
           component: () => import("@/views/ProfileView.vue"),

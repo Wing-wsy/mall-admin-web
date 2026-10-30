@@ -7,32 +7,26 @@
           :default-active="active"
           router
         >
-          <el-menu-item v-if="dashboardItem?.path" :index="dashboardItem.path">
-            <MenuIcon :name="menuIcon(dashboardItem.code)" />
-            <span>{{ dashboardItem.name }}</span>
-          </el-menu-item>
-          <el-sub-menu v-for="group in groupMenus" :key="group.code" :index="group.code">
-            <template #title>
-              <MenuIcon :name="menuIcon(group.code)" />
-              <span>{{ group.name }}</span>
-            </template>
-            <el-menu-item
-              v-for="child in group.children"
-              :key="child.path"
-              :index="child.path!"
-            >
-              <MenuIcon :name="menuIcon(child.code)" />
-              <span>{{ child.name }}</span>
+          <template v-for="item in sidebarMenus" :key="item.code">
+            <el-sub-menu v-if="item.children?.length" :index="item.code">
+              <template #title>
+                <MenuIcon :name="menuIcon(item.code)" />
+                <span>{{ item.name }}</span>
+              </template>
+              <el-menu-item
+                v-for="child in item.children"
+                :key="child.path || child.code"
+                :index="child.path!"
+              >
+                <MenuIcon :name="menuIcon(child.code)" />
+                <span>{{ child.name }}</span>
+              </el-menu-item>
+            </el-sub-menu>
+            <el-menu-item v-else-if="item.path" :index="item.path">
+              <MenuIcon :name="menuIcon(item.code)" />
+              <span>{{ item.name }}</span>
             </el-menu-item>
-          </el-sub-menu>
-          <el-menu-item
-            v-for="item in extraItems"
-            :key="item.path"
-            :index="item.path!"
-          >
-            <MenuIcon :name="menuIcon(item.code)" />
-            <span>{{ item.name }}</span>
-          </el-menu-item>
+          </template>
         </el-menu>
       </div>
     </el-aside>
@@ -264,11 +258,6 @@ function filterMenusWithoutAi(nodes: MenuNode[] | undefined): MenuNode[] {
       children: n.children?.length ? filterMenusWithoutAi(n.children) : n.children,
     }));
 }
-const dashboardItem = computed(() => sidebarMenus.value.find((n) => n.code === "dashboard"));
-const groupMenus = computed(() => sidebarMenus.value.filter((n) => n.children?.length));
-const extraItems = computed(() =>
-  sidebarMenus.value.filter((n) => n.code !== "dashboard" && !n.children?.length && n.path)
-);
 const active = computed(() => route.path);
 
 const unreadCount = ref(0);

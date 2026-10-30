@@ -3,6 +3,7 @@ import type { MenuNode } from "@/stores/user";
 /** 仅映射图标资源名；菜单文案一律用后端 menus.name */
 const MENU_ICONS: Record<string, string> = {
   dashboard: "dashboard",
+  track: "chart",
   goods: "shopping",
   product: "shopping",
   combo: "nested",
